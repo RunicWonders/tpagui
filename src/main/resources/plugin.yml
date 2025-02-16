@@ -1,0 +1,18 @@
+name: TpaGui
+version: 1.0
+main: cn.ningmo.tpagui.TpaGui
+api-version: '1.21'
+softdepend: [floodgate]
+
+commands:
+  tpagui:
+    description: 打开传送请求GUI菜单
+    usage: "§c用法: /<command>"
+    aliases: [tpag, tgui]
+    permission: tpagui.use
+    permission-message: "§c你没有权限使用此命令！"
+
+permissions:
+  tpagui.use:
+    description: 允许使用/tpagui命令
+    default: true 

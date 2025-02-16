@@ -1,0 +1,31 @@
+messages:
+  prefix: "&7[&bTpaGui&7] "
+  console-list-header: "&a当前在线玩家列表:"
+  console-list-format: "&7- &f{player}"
+  player-offline: "&c该玩家已离线！"
+  no-players-online: "&c当前没有其他在线玩家！"
+  form-error: "&c表单处理出错，请重试！"
+  gui:
+    title: "传送请求菜单 - 第 {page} 页"
+    skull:
+      name: "&6{player}"
+      lore:
+        - "&e左键: 传送到该玩家"
+        - "&e右键: 请求该玩家传送到你"
+    navigation:
+      previous-page: "&a上一页"
+      next-page: "&a下一页"
+  form:
+    title: "传送请求菜单"
+    player-select: "选择玩家"
+    tpahere-toggle: "请求玩家传送到我"
+    request:
+      title: "传送请求"
+      content-to: "§e{player} §f想要传送到你的位置"
+      content-here: "§e{player} §f想要你传送到他的位置"
+      accept: "§a接受"
+      deny: "§c拒绝"
+      accepted: "&a你接受了 &e{player} &a的传送请求"
+      denied: "&c你拒绝了 &e{player} &c的传送请求"
+      closed: "&7你关闭了来自 &e{player} &7的传送请求"
+ 
