@@ -28,4 +28,12 @@ messages:
       accepted: "&a你接受了 &e{player} &a的传送请求"
       denied: "&c你拒绝了 &e{player} &c的传送请求"
       closed: "&7你关闭了来自 &e{player} &7的传送请求"
- 
+
+# 命令配置
+commands:
+  accept:
+    - "tpaccept"
+#    - "tpaaccept"
+  deny:
+    - "tpdeny"
+#    - "tpadeny"

@@ -86,6 +86,30 @@ public class BedrockFormManager {
         FloodgateApi.getInstance().getPlayer(player.getUniqueId()).sendForm(form);
     }
 
+    private static void executeDenyCommands(Player player) {
+        List<String> denyCommands = TpaGui.getInstance().getConfig().getStringList("commands.deny");
+        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+        try {
+            for (String cmd : denyCommands) {
+                player.chat("/" + cmd);
+            }
+        } finally {
+            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+        }
+    }
+
+    private static void executeAcceptCommands(Player player, String requester) {
+        List<String> acceptCommands = TpaGui.getInstance().getConfig().getStringList("commands.accept");
+        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+        try {
+            for (String cmd : acceptCommands) {
+                player.chat("/" + cmd + " " + requester);
+            }
+        } finally {
+            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+        }
+    }
+
     public static void sendTpaRequestForm(Player target, String requester, boolean isTpaHere) {
         // 添加调试日志
         TpaGui.getInstance().getLogger().info("准备发送表单给 " + target.getName());
@@ -111,12 +135,7 @@ public class BedrockFormManager {
                         TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
                         target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
                         // 执行拒绝命令
-                        target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                        try {
-                            target.chat("/tpadeny");
-                        } finally {
-                            target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                        }
+                        executeDenyCommands(target);
                         return;
                     }
                     
@@ -127,31 +146,18 @@ public class BedrockFormManager {
                             // 记录到控制台
                             TpaGui.getInstance().getLogger().info(target.getName() + " 接受了来自 " + requester + " 的传送请求");
                             
-                            // 构建命令
-                            String command = "/tpaccept " + requester;
-                            
                             // 执行接受命令
-                            target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                            try {
-                                target.chat(command);
-                                // 发送确认消息
-                                target.sendMessage(TpaGui.getInstance().getMessage("form.request.accepted", "{player}", requester));
-                            } finally {
-                                target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                            }
+                            executeAcceptCommands(target, requester);
+                            
+                            // 发送确认消息
+                            target.sendMessage(TpaGui.getInstance().getMessage("form.request.accepted", "{player}", requester));
                         } else {
                             // 记录拒绝到控制台
                             TpaGui.getInstance().getLogger().info(target.getName() + " 拒绝了来自 " + requester + " 的传送请求");
                             // 发送拒绝消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.denied", "{player}", requester));
                             // 执行拒绝命令
-                            target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                            try {
-                                target.chat("/tpadeny");
-                                target.chat("/tpdeny");
-                            } finally {
-                                target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                            }
+                            executeDenyCommands(target);
                         }
                     } catch (NumberFormatException e) {
                         // 记录错误
