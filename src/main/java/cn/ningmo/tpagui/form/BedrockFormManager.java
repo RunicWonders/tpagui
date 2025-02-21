@@ -110,6 +110,13 @@ public class BedrockFormManager {
                         // 玩家关闭表单，记录到控制台并发送消息
                         TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
                         target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
+                        // 执行拒绝命令
+                        target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+                        try {
+                            target.chat("/tpadeny " + requester);
+                        } finally {
+                            target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+                        }
                         return;
                     }
                     
@@ -137,6 +144,13 @@ public class BedrockFormManager {
                             TpaGui.getInstance().getLogger().info(target.getName() + " 拒绝了来自 " + requester + " 的传送请求");
                             // 发送拒绝消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.denied", "{player}", requester));
+                            // 执行拒绝命令
+                            target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+                            try {
+                                target.chat("/tpadeny " + requester);
+                            } finally {
+                                target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+                            }
                         }
                     } catch (NumberFormatException e) {
                         // 记录错误
