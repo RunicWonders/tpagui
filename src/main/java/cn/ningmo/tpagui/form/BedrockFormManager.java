@@ -130,7 +130,7 @@ public class BedrockFormManager {
                 .button(TpaGui.getInstance().getMessage("form.request.accept"))
                 .button(TpaGui.getInstance().getMessage("form.request.deny"))
                 .responseHandler((form1, response) -> {
-                    if (response == null) {
+                    if (response == null || response.trim().isEmpty()) {
                         // 玩家关闭表单，记录到控制台并发送消息
                         TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
                         target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
@@ -160,9 +160,12 @@ public class BedrockFormManager {
                             executeDenyCommands(target);
                         }
                     } catch (NumberFormatException e) {
-                        // 记录错误
-                        TpaGui.getInstance().getLogger().warning("处理表单响应时出错: " + e.getMessage());
-                        target.sendMessage(TpaGui.getInstance().getMessage("form-error"));
+                        // 记录错误，但不显示给玩家，因为可能是关闭表单导致的
+                        TpaGui.getInstance().getLogger().fine("表单响应解析: " + e.getMessage());
+                        // 当作关闭表单处理
+                        TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
+                        target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
+                        executeDenyCommands(target);
                     }
                 })
                 .build();
