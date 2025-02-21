@@ -11,7 +11,7 @@ import org.geysermc.floodgate.api.FloodgateApi;
 
 public class TpaRequestListener implements Listener {
     
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String command = event.getMessage().toLowerCase();
         
@@ -45,11 +45,6 @@ public class TpaRequestListener implements Listener {
                 " 从 " + event.getPlayer().getName() + 
                 " 类型: " + (command.startsWith("/tpahere ") ? "tpahere" : "tpa")
             );
-            
-            // 如果是从GUI发出的命令，取消事件以防止重复处理
-            if (event.getPlayer().hasMetadata("TPAGUI_COMMAND")) {
-                event.setCancelled(true);
-            }
         }
     }
 } 
