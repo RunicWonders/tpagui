@@ -113,7 +113,7 @@ public class BedrockFormManager {
                         // 执行拒绝命令
                         target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
                         try {
-                            target.chat("/tpadeny " + requester);
+                            target.chat("/tpadeny");
                         } finally {
                             target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
                         }
@@ -147,7 +147,7 @@ public class BedrockFormManager {
                             // 执行拒绝命令
                             target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
                             try {
-                                target.chat("/tpadeny " + requester);
+                                target.chat("/tpadeny");
                             } finally {
                                 target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
                             }
