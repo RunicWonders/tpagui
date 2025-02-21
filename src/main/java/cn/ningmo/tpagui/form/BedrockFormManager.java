@@ -148,6 +148,7 @@ public class BedrockFormManager {
                             target.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
                             try {
                                 target.chat("/tpadeny");
+                                target.chat("/tpdeny");
                             } finally {
                                 target.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
                             }

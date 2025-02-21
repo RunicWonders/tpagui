@@ -1,7 +1,7 @@
 name: TpaGui
 version: 1.0
 main: cn.ningmo.tpagui.TpaGui
-api-version: '1.21'
+api-version: '1.13'
 softdepend: [floodgate]
 
 commands:

@@ -23,48 +23,59 @@ public class MenuListener implements Listener {
         Player player = (Player) event.getWhoClicked();
         ItemStack clicked = event.getCurrentItem();
         
-        if (clicked == null || !clicked.hasItemMeta()) {
+        if (clicked == null || clicked.getType() == Material.AIR) {
+            return;
+        }
+        
+        ItemMeta meta = clicked.getItemMeta();
+        if (meta == null) {
             return;
         }
         
         // 处理翻页
         if (clicked.getType() == Material.ARROW) {
-            int currentPage = Integer.parseInt(event.getView().getTitle().split(" ")[3]) - 1;
-            if (clicked.getItemMeta().getDisplayName().contains("上一页")) {
-                player.openInventory(GuiManager.createTpaMenu(player, currentPage - 1));
-            } else if (clicked.getItemMeta().getDisplayName().contains("下一页")) {
-                player.openInventory(GuiManager.createTpaMenu(player, currentPage + 1));
+            String title = event.getView().getTitle();
+            String[] titleParts = title.split(" ");
+            if (titleParts.length >= 4) {
+                int currentPage = Integer.parseInt(titleParts[3]) - 1;
+                if (meta.getDisplayName().contains("上一页")) {
+                    player.openInventory(GuiManager.createTpaMenu(player, currentPage - 1));
+                } else if (meta.getDisplayName().contains("下一页")) {
+                    player.openInventory(GuiManager.createTpaMenu(player, currentPage + 1));
+                }
             }
             return;
         }
         
         // 处理玩家头颅点击
         if (clicked.getType() == Material.PLAYER_HEAD) {
-            SkullMeta meta = (SkullMeta) clicked.getItemMeta();
-            Player target = meta.getOwningPlayer().getPlayer();
-            
-            if (target == null || !target.isOnline()) {
-                player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
-                return;
+            SkullMeta skullMeta = (SkullMeta) meta;
+            if (skullMeta.getOwningPlayer() != null) {
+                Player target = skullMeta.getOwningPlayer().getPlayer();
+                
+                if (target == null || !target.isOnline()) {
+                    player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
+                    return;
+                }
+                
+                // 构建命令
+                String command = event.isLeftClick() ? 
+                    "/tpa " + target.getName() : 
+                    "/tpahere " + target.getName();
+                
+                // 记录到控制台
+                TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
+                
+                // 执行命令
+                player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+                try {
+                    player.chat(command);
+                } finally {
+                    player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+                }
+                
+                player.closeInventory();
             }
-            
-            // 构建命令
-            String command = event.isLeftClick() ? 
-                "/tpa " + target.getName() : 
-                "/tpahere " + target.getName();
-            
-            // 记录到控制台
-            TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
-            
-            // 执行命令
-            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-            try {
-                player.chat(command);
-            } finally {
-                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-            }
-            
-            player.closeInventory();
         }
     }
 } 

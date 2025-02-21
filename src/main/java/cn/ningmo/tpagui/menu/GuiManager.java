@@ -54,26 +54,30 @@ public class GuiManager {
     
     private static ItemStack createPlayerSkull(Player player) {
         TpaGui plugin = TpaGui.getInstance();
-        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+        ItemStack skull = new ItemStack(Material.PLAYER_HEAD, 1);
         SkullMeta meta = (SkullMeta) skull.getItemMeta();
-        meta.setOwningPlayer(player);
-        meta.setDisplayName(plugin.getMessage("gui.skull.name", "{player}", player.getName()));
-        
-        List<String> lore = new ArrayList<>();
-        for (String line : plugin.getConfig().getStringList("messages.gui.skull.lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', line));
+        if (meta != null) {
+            meta.setOwningPlayer(player);
+            meta.setDisplayName(plugin.getMessage("gui.skull.name", "{player}", player.getName()));
+            
+            List<String> lore = new ArrayList<>();
+            for (String line : plugin.getConfig().getStringList("messages.gui.skull.lore")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
+            meta.setLore(lore);
+            
+            skull.setItemMeta(meta);
         }
-        meta.setLore(lore);
-        
-        skull.setItemMeta(meta);
         return skull;
     }
     
     private static ItemStack createNavigationItem(Material material, String name) {
-        ItemStack item = new ItemStack(material);
+        ItemStack item = new ItemStack(material, 1);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
-        item.setItemMeta(meta);
+        if (meta != null) {
+            meta.setDisplayName(name);
+            item.setItemMeta(meta);
+        }
         return item;
     }
 } 
