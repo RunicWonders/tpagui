@@ -31,6 +31,19 @@ messages:
 
 # 命令配置
 commands:
+  # TPA相关命令配置
+  tpa:
+    # 传送到目标玩家的命令
+    to-player: "tpa"
+    # 请求目标玩家传送到自己的命令
+    here: "tpahere"
+  
+  # 监听的TPA命令前缀（用于检测传送请求）
+  listen-commands:
+    - "tpa"
+    - "tpahere"
+  
+  # 接受和拒绝命令
   accept:
     - "tpaccept"
 #    - "tpaaccept"

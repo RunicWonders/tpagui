@@ -60,8 +60,12 @@ public class BedrockFormManager {
                         return;
                     }
 
+                    // 从配置文件获取命令
+                    String tpaCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
+                    String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
+                    
                     // 构建命令
-                    String command = isTpaHere ? "/tpahere " + targetName : "/tpa " + targetName;
+                    String command = isTpaHere ? "/" + tpaHereCommand + " " + targetName : "/" + tpaCommand + " " + targetName;
                     
                     // 记录到控制台
                     TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
@@ -184,4 +188,4 @@ public class BedrockFormManager {
             e.printStackTrace();
         }
     }
-} 
+}

@@ -58,10 +58,14 @@ public class MenuListener implements Listener {
                     return;
                 }
                 
+                // 从配置文件获取命令
+                String tpaCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
+                String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
+                
                 // 构建命令
                 String command = event.isLeftClick() ? 
-                    "/tpa " + target.getName() : 
-                    "/tpahere " + target.getName();
+                    "/" + tpaCommand + " " + target.getName() : 
+                    "/" + tpaHereCommand + " " + target.getName();
                 
                 // 记录到控制台
                 TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
@@ -78,4 +82,4 @@ public class MenuListener implements Listener {
             }
         }
     }
-} 
+}

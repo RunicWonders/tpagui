@@ -15,8 +15,19 @@ public class TpaRequestListener implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String command = event.getMessage().toLowerCase();
         
-        // 检查是否是tpa相关命令
-        if (!command.startsWith("/tpa ") && !command.startsWith("/tpahere ")) {
+        // 从配置文件获取监听的命令列表
+        java.util.List<String> listenCommands = TpaGui.getInstance().getConfig().getStringList("commands.listen-commands");
+        
+        // 检查是否是配置的tpa相关命令
+        boolean isTpaCommand = false;
+        for (String cmd : listenCommands) {
+            if (command.startsWith("/" + cmd.toLowerCase() + " ")) {
+                isTpaCommand = true;
+                break;
+            }
+        }
+        
+        if (!isTpaCommand) {
             return;
         }
         
@@ -32,19 +43,22 @@ public class TpaRequestListener implements Listener {
         if (TpaGui.getInstance().isFloodgateEnabled() && 
             FloodgateApi.getInstance().isFloodgatePlayer(target.getUniqueId())) {
             
+            // 从配置文件获取tpahere命令
+            String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
+            
             // 发送表单
             BedrockFormManager.sendTpaRequestForm(
                 target, 
                 event.getPlayer().getName(), 
-                command.startsWith("/tpahere ")
+                command.startsWith("/" + tpaHereCommand.toLowerCase() + " ")
             );
             
             // 调试信息
             TpaGui.getInstance().getLogger().info(
                 "发送传送请求表单给 " + target.getName() + 
                 " 从 " + event.getPlayer().getName() + 
-                " 类型: " + (command.startsWith("/tpahere ") ? "tpahere" : "tpa")
+                " 类型: " + (command.startsWith("/" + tpaHereCommand.toLowerCase() + " ") ? tpaHereCommand : TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa"))
             );
         }
     }
-} 
+}
