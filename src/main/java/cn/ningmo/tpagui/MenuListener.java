@@ -14,7 +14,11 @@ import org.bukkit.metadata.FixedMetadataValue;
 public class MenuListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!event.getView().getTitle().startsWith("传送请求菜单")) {
+        // 获取配置中的GUI标题模板，去掉占位符部分进行匹配
+        String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
+        String titlePrefix = titleTemplate.split(" - ")[0]; // 获取标题前缀部分
+        
+        if (!event.getView().getTitle().startsWith(titlePrefix)) {
             return;
         }
         
@@ -35,13 +39,16 @@ public class MenuListener implements Listener {
         // 处理翻页
         if (clicked.getType() == Material.ARROW) {
             String title = event.getView().getTitle();
-            String[] titleParts = title.split(" ");
-            if (titleParts.length >= 4) {
-                int currentPage = Integer.parseInt(titleParts[3]) - 1;
-                if (meta.getDisplayName().contains("上一页")) {
-                    player.openInventory(GuiManager.createTpaMenu(player, currentPage - 1));
-                } else if (meta.getDisplayName().contains("下一页")) {
-                    player.openInventory(GuiManager.createTpaMenu(player, currentPage + 1));
+            // 从标题中提取页码，支持不同语言的标题格式
+            int currentPage = extractPageFromTitle(title);
+            if (currentPage > 0) {
+                String previousPageText = TpaGui.getInstance().getMessage("gui.navigation.previous-page");
+                String nextPageText = TpaGui.getInstance().getMessage("gui.navigation.next-page");
+                
+                if (meta.getDisplayName().equals(previousPageText)) {
+                    player.openInventory(GuiManager.createTpaMenu(player, currentPage - 2)); // currentPage是1-based，需要转换为0-based
+                } else if (meta.getDisplayName().equals(nextPageText)) {
+                    player.openInventory(GuiManager.createTpaMenu(player, currentPage)); // currentPage已经是下一页的0-based索引
                 }
             }
             return;
@@ -81,5 +88,37 @@ public class MenuListener implements Listener {
                 player.closeInventory();
             }
         }
+    }
+    
+    /**
+     * 从标题中提取页码
+     * @param title GUI标题
+     * @return 页码（1-based），如果无法提取则返回0
+     */
+    private int extractPageFromTitle(String title) {
+        try {
+            // 获取配置中的标题模板
+            String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
+            
+            // 找到占位符{page}在模板中的位置
+            int placeholderIndex = titleTemplate.indexOf("{page}");
+            if (placeholderIndex == -1) {
+                return 0;
+            }
+            
+            // 获取占位符前后的文本
+            String prefix = titleTemplate.substring(0, placeholderIndex);
+            String suffix = titleTemplate.substring(placeholderIndex + 6); // 6是"{page}"的长度
+            
+            // 从实际标题中提取页码
+            if (title.startsWith(prefix) && title.endsWith(suffix)) {
+                String pageStr = title.substring(prefix.length(), title.length() - suffix.length());
+                return Integer.parseInt(pageStr.trim());
+            }
+        } catch (Exception e) {
+            String errorMsg = TpaGui.getInstance().getMessage("gui.error.extract-page-failed", title);
+            TpaGui.getInstance().getLogger().warning(errorMsg);
+        }
+        return 0;
     }
 }

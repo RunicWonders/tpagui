@@ -15,6 +15,8 @@ messages:
     navigation:
       previous-page: "&a上一页"
       next-page: "&a下一页"
+    error:
+      extract-page-failed: "无法从标题中提取页码: {title}"
   form:
     title: "传送请求菜单"
     player-select: "选择玩家"
