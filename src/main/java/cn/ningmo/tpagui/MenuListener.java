@@ -14,79 +14,105 @@ import org.bukkit.metadata.FixedMetadataValue;
 public class MenuListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // 获取配置中的GUI标题模板，去掉占位符部分进行匹配
-        String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
-        String titlePrefix = titleTemplate.split(" - ")[0]; // 获取标题前缀部分
+        // 只处理GUI库存的点击，忽略玩家自己的库存点击
+        // 检查点击的库存是否为顶部库存（GUI）
+        if (event.getClickedInventory() == null || 
+            !event.getClickedInventory().equals(event.getView().getTopInventory())) {
+            return;
+        }
         
+        String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
+        int pagePlaceholderIndex = titleTemplate.indexOf("{page}");
+        if (pagePlaceholderIndex == -1) {
+            return;
+        }
+        String titlePrefix = titleTemplate.substring(0, pagePlaceholderIndex);
+
         if (!event.getView().getTitle().startsWith(titlePrefix)) {
             return;
         }
         
         event.setCancelled(true);
         
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+        
         Player player = (Player) event.getWhoClicked();
         ItemStack clicked = event.getCurrentItem();
-        
         if (clicked == null || clicked.getType() == Material.AIR) {
             return;
         }
-        
-        ItemMeta meta = clicked.getItemMeta();
-        if (meta == null) {
+
+        String title = event.getView().getTitle();
+        int currentPage = extractPageFromTitle(title);
+        if (currentPage <= 0) {
             return;
         }
-        
-        // 处理翻页
+
+        // 将从标题中提取的页码（从1开始）转换为从0开始的页码
+        int pageIndex = currentPage - 1;
+
         if (clicked.getType() == Material.ARROW) {
-            String title = event.getView().getTitle();
-            // 从标题中提取页码，支持不同语言的标题格式
-            int currentPage = extractPageFromTitle(title);
-            if (currentPage > 0) {
-                String previousPageText = TpaGui.getInstance().getMessage("gui.navigation.previous-page");
-                String nextPageText = TpaGui.getInstance().getMessage("gui.navigation.next-page");
-                
-                if (meta.getDisplayName().equals(previousPageText)) {
-                    player.openInventory(GuiManager.createTpaMenu(player, currentPage - 2)); // currentPage是1-based，需要转换为0-based
-                } else if (meta.getDisplayName().equals(nextPageText)) {
-                    player.openInventory(GuiManager.createTpaMenu(player, currentPage)); // currentPage已经是下一页的0-based索引
+            ItemMeta itemMeta = clicked.getItemMeta();
+            if (itemMeta == null || !itemMeta.hasDisplayName()) {
+                return;
+            }
+            
+            String itemName = itemMeta.getDisplayName();
+            String nextPageName = TpaGui.getInstance().getMessage("gui.navigation.next-page");
+            String prevPageName = TpaGui.getInstance().getMessage("gui.navigation.previous-page");
+
+            if (itemName.equals(nextPageName)) {
+                player.openInventory(GuiManager.createTpaMenu(player, pageIndex + 1));
+            } else if (itemName.equals(prevPageName)) {
+                if (pageIndex > 0) {
+                    player.openInventory(GuiManager.createTpaMenu(player, pageIndex - 1));
                 }
             }
-            return;
-        }
-        
-        // 处理玩家头颅点击
-        if (clicked.getType() == Material.PLAYER_HEAD) {
+        } else if (clicked.getType() == Material.PLAYER_HEAD) {
+            ItemMeta meta = clicked.getItemMeta();
+            if (meta == null || !(meta instanceof SkullMeta)) {
+                return;
+            }
+
             SkullMeta skullMeta = (SkullMeta) meta;
-            if (skullMeta.getOwningPlayer() != null) {
-                Player target = skullMeta.getOwningPlayer().getPlayer();
-                
-                if (target == null || !target.isOnline()) {
-                    player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
-                    return;
-                }
-                
-                // 从配置文件获取命令
-                String tpaCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
-                String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
-                
-                // 构建命令
-                String command = event.isLeftClick() ? 
-                    "/" + tpaCommand + " " + target.getName() : 
-                    "/" + tpaHereCommand + " " + target.getName();
-                
-                // 记录到控制台
-                TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
-                
-                // 执行命令
-                player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                try {
-                    player.chat(command);
-                } finally {
-                    player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                }
-                
-                player.closeInventory();
+            if (skullMeta.getOwningPlayer() == null) {
+                return;
             }
+            
+            Player target = skullMeta.getOwningPlayer().getPlayer();
+            
+            if (target == null || !target.isOnline()) {
+                player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
+                return;
+            }
+            
+            // 从配置文件获取命令
+            String tpaCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
+            String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
+            
+            // 构建命令
+            String command = event.isLeftClick() ? 
+                "/" + tpaCommand + " " + target.getName() : 
+                "/" + tpaHereCommand + " " + target.getName();
+            
+            // 记录到控制台
+            TpaGui.getInstance().getLogger().info(
+                TpaGui.getInstance().getLogMessage("gui-command-executed", 
+                    "{player}", player.getName(), 
+                    "{command}", command)
+            );
+            
+            // 执行命令
+            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+            try {
+                player.chat(command);
+            } finally {
+                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+            }
+            
+            player.closeInventory();
         }
     }
     
@@ -113,9 +139,10 @@ public class MenuListener implements Listener {
             // 从实际标题中提取页码
             if (title.startsWith(prefix) && title.endsWith(suffix)) {
                 String pageStr = title.substring(prefix.length(), title.length() - suffix.length());
-                return Integer.parseInt(pageStr.trim());
+                int page = Integer.parseInt(pageStr.trim());
+                return page > 0 ? page : 0;
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
             String errorMsg = TpaGui.getInstance().getMessage("gui.error.extract-page-failed", title);
             TpaGui.getInstance().getLogger().warning(errorMsg);
         }

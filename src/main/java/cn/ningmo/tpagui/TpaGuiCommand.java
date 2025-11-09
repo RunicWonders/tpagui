@@ -24,12 +24,23 @@ public class TpaGuiCommand implements CommandExecutor {
         Player player = (Player) sender;
         
         // 检查是否为基岩版玩家
-        if (TpaGui.getInstance().isFloodgateEnabled() && 
-            FloodgateApi.getInstance().isFloodgatePlayer(player.getUniqueId())) {
-            BedrockFormManager.openTpaForm(player);
-        } else {
-            player.openInventory(GuiManager.createTpaMenu(player, 0));
+        if (TpaGui.getInstance().isFloodgateEnabled()) {
+            try {
+                FloodgateApi api = FloodgateApi.getInstance();
+                if (api != null && api.isFloodgatePlayer(player.getUniqueId())) {
+                    BedrockFormManager.openTpaForm(player);
+                    return true;
+                }
+            } catch (Exception e) {
+                TpaGui.getInstance().getLogger().warning(
+                    TpaGui.getInstance().getLogMessage("floodgate-check-error", 
+                        "{error}", e.getMessage())
+                );
+            }
         }
+        
+        // Java版玩家或Floodgate不可用时使用GUI菜单
+        player.openInventory(GuiManager.createTpaMenu(player, 0));
         
         return true;
     }

@@ -9,6 +9,7 @@ import org.geysermc.floodgate.api.FloodgateApi;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import org.geysermc.cumulus.SimpleForm;
+import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.ArrayList;
@@ -43,13 +44,17 @@ public class BedrockFormManager {
             .responseHandler((form1, response) -> {
                 if (response == null) {
                     // 玩家关闭表单
-                    TpaGui.getInstance().getLogger().info(player.getName() + " 关闭了传送请求菜单");
+                    TpaGui.getInstance().getLogger().info(
+                        TpaGui.getInstance().getLogMessage("form-closed",
+                            "{player}", player.getName())
+                    );
                     return;
                 }
                 
                 try {
-                    // 解析JSON响应
-                    JsonArray jsonArray = new JsonParser().parse(response).getAsJsonArray();
+                    // 解析JSON响应（兼容Gson 2.10.1和1.21.8+）
+                    JsonParser parser = new JsonParser();
+                    JsonArray jsonArray = parser.parse(response).getAsJsonArray();
                     int selectedIndex = jsonArray.get(0).getAsInt();
                     boolean isTpaHere = jsonArray.get(1).getAsBoolean();
 
@@ -68,7 +73,11 @@ public class BedrockFormManager {
                     String command = isTpaHere ? "/" + tpaHereCommand + " " + targetName : "/" + tpaCommand + " " + targetName;
                     
                     // 记录到控制台
-                    TpaGui.getInstance().getLogger().info(player.getName() + " 通过GUI执行命令: " + command);
+                    TpaGui.getInstance().getLogger().info(
+                        TpaGui.getInstance().getLogMessage("gui-command-executed",
+                            "{player}", player.getName(),
+                            "{command}", command)
+                    );
                     
                     // 执行命令
                     player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
@@ -80,14 +89,41 @@ public class BedrockFormManager {
                 } catch (Exception e) {
                     if (response != null) {  // 只在非关闭表单时显示错误
                         player.sendMessage(TpaGui.getInstance().getMessage("form-error"));
-                        TpaGui.getInstance().getLogger().warning("处理表单响应时出错: " + e.getMessage());
+                        TpaGui.getInstance().getLogger().warning(
+                            TpaGui.getInstance().getLogMessage("form-response-error",
+                                "{error}", e.getMessage())
+                        );
                     }
                 }
             })
             .build();
 
         // 发送表单给玩家
-        FloodgateApi.getInstance().getPlayer(player.getUniqueId()).sendForm(form);
+        try {
+            FloodgateApi api = FloodgateApi.getInstance();
+            if (api == null) {
+                TpaGui.getInstance().getLogger().warning(
+                    TpaGui.getInstance().getLogMessage("floodgate-api-unavailable")
+                );
+                return;
+            }
+            
+            FloodgatePlayer floodgatePlayer = api.getPlayer(player.getUniqueId());
+            if (floodgatePlayer != null) {
+                floodgatePlayer.sendForm(form);
+            } else {
+                TpaGui.getInstance().getLogger().warning(
+                    TpaGui.getInstance().getLogMessage("floodgate-player-unavailable",
+                        "{player}", player.getName())
+                );
+            }
+        } catch (Exception e) {
+            TpaGui.getInstance().getLogger().severe(
+                TpaGui.getInstance().getLogMessage("floodgate-send-form-error",
+                    "{error}", e.getMessage())
+            );
+            e.printStackTrace();
+        }
     }
 
     private static void executeDenyCommands(Player player) {
@@ -116,7 +152,10 @@ public class BedrockFormManager {
 
     public static void sendTpaRequestForm(Player target, String requester, boolean isTpaHere) {
         // 添加调试日志
-        TpaGui.getInstance().getLogger().info("准备发送表单给 " + target.getName());
+        TpaGui.getInstance().getLogger().info(
+            TpaGui.getInstance().getLogMessage("preparing-send-form",
+                "{player}", target.getName())
+        );
         
         try {
             String title = TpaGui.getInstance().getMessage("form.request.title");
@@ -126,7 +165,11 @@ public class BedrockFormManager {
             );
             
             // 添加调试日志
-            TpaGui.getInstance().getLogger().info("表单内容: " + title + " | " + content);
+            TpaGui.getInstance().getLogger().info(
+                TpaGui.getInstance().getLogMessage("form-content",
+                    "{title}", title,
+                    "{content}", content)
+            );
             
             SimpleForm form = SimpleForm.builder()
                 .title(title)
@@ -136,7 +179,11 @@ public class BedrockFormManager {
                 .responseHandler((form1, response) -> {
                     if (response == null || response.trim().isEmpty()) {
                         // 玩家关闭表单，记录到控制台并发送消息
-                        TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
+                        TpaGui.getInstance().getLogger().info(
+                            TpaGui.getInstance().getLogMessage("request-form-closed",
+                                "{player}", target.getName(),
+                                "{requester}", requester)
+                        );
                         target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
                         // 执行拒绝命令
                         executeDenyCommands(target);
@@ -148,7 +195,11 @@ public class BedrockFormManager {
                         int buttonId = Integer.parseInt(response.trim());
                         if (buttonId == 0) {
                             // 记录到控制台
-                            TpaGui.getInstance().getLogger().info(target.getName() + " 接受了来自 " + requester + " 的传送请求");
+                            TpaGui.getInstance().getLogger().info(
+                                TpaGui.getInstance().getLogMessage("request-accepted",
+                                    "{player}", target.getName(),
+                                    "{requester}", requester)
+                            );
                             
                             // 执行接受命令
                             executeAcceptCommands(target, requester);
@@ -157,7 +208,11 @@ public class BedrockFormManager {
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.accepted", "{player}", requester));
                         } else {
                             // 记录拒绝到控制台
-                            TpaGui.getInstance().getLogger().info(target.getName() + " 拒绝了来自 " + requester + " 的传送请求");
+                            TpaGui.getInstance().getLogger().info(
+                                TpaGui.getInstance().getLogMessage("request-denied",
+                                    "{player}", target.getName(),
+                                    "{requester}", requester)
+                            );
                             // 发送拒绝消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.denied", "{player}", requester));
                             // 执行拒绝命令
@@ -165,9 +220,16 @@ public class BedrockFormManager {
                         }
                     } catch (NumberFormatException e) {
                         // 记录错误，但不显示给玩家，因为可能是关闭表单导致的
-                        TpaGui.getInstance().getLogger().fine("表单响应解析: " + e.getMessage());
+                        TpaGui.getInstance().getLogger().fine(
+                            TpaGui.getInstance().getLogMessage("form-response-parse",
+                                "{error}", e.getMessage())
+                        );
                         // 当作关闭表单处理
-                        TpaGui.getInstance().getLogger().info(target.getName() + " 关闭了来自 " + requester + " 的传送请求表单");
+                        TpaGui.getInstance().getLogger().info(
+                            TpaGui.getInstance().getLogMessage("request-form-closed",
+                                "{player}", target.getName(),
+                                "{requester}", requester)
+                        );
                         target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
                         executeDenyCommands(target);
                     }
@@ -175,16 +237,41 @@ public class BedrockFormManager {
                 .build();
             
             // 获取 FloodgatePlayer 并发送表单
-            var floodgatePlayer = FloodgateApi.getInstance().getPlayer(target.getUniqueId());
-            if (floodgatePlayer != null) {
-                floodgatePlayer.sendForm(form);
-                // 添加调试日志
-                TpaGui.getInstance().getLogger().info("表单已发送给 " + target.getName());
-            } else {
-                TpaGui.getInstance().getLogger().warning("无法获取 " + target.getName() + " 的 FloodgatePlayer");
+            try {
+                FloodgateApi api = FloodgateApi.getInstance();
+                if (api == null) {
+                    TpaGui.getInstance().getLogger().warning(
+                        TpaGui.getInstance().getLogMessage("floodgate-api-unavailable")
+                    );
+                    return;
+                }
+                
+                FloodgatePlayer floodgatePlayer = api.getPlayer(target.getUniqueId());
+                if (floodgatePlayer != null) {
+                    floodgatePlayer.sendForm(form);
+                    // 添加调试日志
+                    TpaGui.getInstance().getLogger().info(
+                        TpaGui.getInstance().getLogMessage("form-sent",
+                            "{player}", target.getName())
+                    );
+                } else {
+                    TpaGui.getInstance().getLogger().warning(
+                        TpaGui.getInstance().getLogMessage("floodgate-player-error",
+                            "{player}", target.getName())
+                    );
+                }
+            } catch (Exception e) {
+                TpaGui.getInstance().getLogger().severe(
+                    TpaGui.getInstance().getLogMessage("floodgate-send-form-error",
+                        "{error}", e.getMessage())
+                );
+                e.printStackTrace();
             }
         } catch (Exception e) {
-            TpaGui.getInstance().getLogger().severe("发送表单时出错: " + e.getMessage());
+            TpaGui.getInstance().getLogger().severe(
+                TpaGui.getInstance().getLogMessage("floodgate-send-form-error",
+                    "{error}", e.getMessage())
+            );
             e.printStackTrace();
         }
     }

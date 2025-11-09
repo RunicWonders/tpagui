@@ -2,3 +2,5 @@
 .vscode
 target
 tpagui.iml
+maven
+*.zip

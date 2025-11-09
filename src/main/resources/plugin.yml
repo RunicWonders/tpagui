@@ -1,7 +1,7 @@
 name: TpaGui
-version: 1.0.2
+version: 1.1.0
 main: cn.ningmo.tpagui.TpaGui
-api-version: '1.13'
+api-version: '1.21'
 softdepend: [floodgate]
 
 commands:
@@ -16,3 +16,6 @@ permissions:
   tpagui.use:
     description: 允许使用/tpagui命令
     default: true
+  tpagui.admin:
+    description: 管理员权限（接收更新通知等）
+    default: op

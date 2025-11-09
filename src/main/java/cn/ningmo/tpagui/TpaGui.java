@@ -8,19 +8,20 @@ import org.bukkit.command.PluginCommand;
 public class TpaGui extends JavaPlugin {
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
+    private UpdateChecker updateChecker;
     
     @Override
     public void onEnable() {
         instance = this;
         
+        // 保存默认配置
+        saveDefaultConfig();
+        
         // 检查Floodgate
         if (getServer().getPluginManager().getPlugin("floodgate") != null) {
             floodgateEnabled = true;
-            getLogger().info("已检测到Floodgate，基岩版表单支持已启用");
+            getLogger().info(getLogMessage("floodgate-enabled"));
         }
-        
-        // 保存默认配置
-        saveDefaultConfig();
         
         // 注册命令
         PluginCommand command = getCommand("tpagui");
@@ -32,6 +33,40 @@ public class TpaGui extends JavaPlugin {
         // 注册监听器
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
         getServer().getPluginManager().registerEvents(new TpaRequestListener(), this);
+        
+        // 初始化更新检查器
+        updateChecker = new UpdateChecker(this);
+        
+        // 检查更新（延迟5秒，避免影响启动速度）
+        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+            checkForUpdates();
+        }, 100L); // 5秒 = 100 ticks
+    }
+    
+    /**
+     * 检查更新
+     */
+    private void checkForUpdates() {
+        if (!getConfig().getBoolean("update-check.enabled", true)) {
+            return;
+        }
+        
+        updateChecker.checkForUpdates().thenAccept(hasUpdate -> {
+            if (hasUpdate) {
+                updateChecker.notifyUpdate();
+            } else {
+                getLogger().info(getLogMessage("update-latest",
+                    "{version}", updateChecker.getCurrentVersion()));
+            }
+        });
+    }
+    
+    /**
+     * 获取更新检查器
+     * @return 更新检查器
+     */
+    public UpdateChecker getUpdateChecker() {
+        return updateChecker;
     }
     
     public static TpaGui getInstance() {
@@ -49,6 +84,22 @@ public class TpaGui extends JavaPlugin {
     
     public String getMessage(String path, String... placeholders) {
         String message = getMessage(path);
+        for (int i = 0; i < placeholders.length; i += 2) {
+            if (i + 1 < placeholders.length) {
+                message = message.replace(placeholders[i], placeholders[i + 1]);
+            }
+        }
+        return message;
+    }
+    
+    /**
+     * 获取日志消息（不带颜色代码）
+     * @param path 消息路径
+     * @param placeholders 占位符，格式: key1, value1, key2, value2, ...
+     * @return 日志消息
+     */
+    public String getLogMessage(String path, String... placeholders) {
+        String message = getConfig().getString("messages.log." + path, path);
         for (int i = 0; i < placeholders.length; i += 2) {
             if (i + 1 < placeholders.length) {
                 message = message.replace(placeholders[i], placeholders[i + 1]);

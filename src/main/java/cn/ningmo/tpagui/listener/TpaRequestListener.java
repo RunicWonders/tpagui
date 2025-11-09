@@ -40,25 +40,37 @@ public class TpaRequestListener implements Listener {
         if (target == null) return;
         
         // 检查目标玩家是否为基岩版玩家
-        if (TpaGui.getInstance().isFloodgateEnabled() && 
-            FloodgateApi.getInstance().isFloodgatePlayer(target.getUniqueId())) {
-            
-            // 从配置文件获取tpahere命令
-            String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
-            
-            // 发送表单
-            BedrockFormManager.sendTpaRequestForm(
-                target, 
-                event.getPlayer().getName(), 
-                command.startsWith("/" + tpaHereCommand.toLowerCase() + " ")
-            );
-            
-            // 调试信息
-            TpaGui.getInstance().getLogger().info(
-                "发送传送请求表单给 " + target.getName() + 
-                " 从 " + event.getPlayer().getName() + 
-                " 类型: " + (command.startsWith("/" + tpaHereCommand.toLowerCase() + " ") ? tpaHereCommand : TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa"))
-            );
+        if (TpaGui.getInstance().isFloodgateEnabled()) {
+            try {
+                FloodgateApi api = FloodgateApi.getInstance();
+                if (api != null && api.isFloodgatePlayer(target.getUniqueId())) {
+                    // 从配置文件获取tpahere命令
+                    String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
+                    
+                    // 发送表单
+                    BedrockFormManager.sendTpaRequestForm(
+                        target, 
+                        event.getPlayer().getName(), 
+                        command.startsWith("/" + tpaHereCommand.toLowerCase() + " ")
+                    );
+                    
+                    // 调试信息
+                    String commandType = command.startsWith("/" + tpaHereCommand.toLowerCase() + " ") 
+                        ? tpaHereCommand 
+                        : TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
+                    TpaGui.getInstance().getLogger().info(
+                        TpaGui.getInstance().getLogMessage("send-request-form",
+                            "{target}", target.getName(),
+                            "{requester}", event.getPlayer().getName(),
+                            "{type}", commandType)
+                    );
+                }
+            } catch (Exception e) {
+                TpaGui.getInstance().getLogger().warning(
+                    TpaGui.getInstance().getLogMessage("floodgate-request-error",
+                        "{error}", e.getMessage())
+                );
+            }
         }
     }
 }
