@@ -1,0 +1,121 @@
+[简幻欢]: 正在检查磁盘占用情况，请稍等...
+[简幻欢]: 已自动更新服务器端口等信息！
+[简幻欢]: 正在拉取docker镜像，请稍等...
+[简幻欢]: 已完成docker镜像拉取！
+Starting org.bukkit.craftbukkit.Main
+*** Warning, you've not updated in a while! ***
+*** Please download a new build from https://papermc.io/downloads/paper ***
+[00:51:25 INFO]: [bootstrap] Running Java 21 (Java HotSpot(TM) 64-Bit Server VM 21.0.2+13-LTS-58; Oracle Corporation null) on Linux 6.1.0-17-amd64 (amd64)
+[00:51:25 INFO]: [bootstrap] Loading Paper 1.21.8-60-main@29c8822 (2025-09-06T21:49:13Z) for Minecraft 1.21.8
+[00:51:25 INFO]: [PluginInitializerManager] Initializing plugins...
+[00:51:26 INFO]: [PluginRemapper] Remapping plugin 'plugins/tpagui-1.2.0-beta.1.jar'...
+[00:51:27 INFO]: [PluginRemapper] Done remapping plugin 'plugins/tpagui-1.2.0-beta.1.jar' in 626ms.
+[00:51:27 INFO]: [FileProviderSource] The spark plugin will not be loaded as this server bundles the spark profiler.
+[00:51:27 INFO]: [PluginInitializerManager] Initialized 4 plugins
+[00:51:27 INFO]: [PluginInitializerManager] Bukkit plugins (4):
+ - Geyser-Spigot (2.9.2-SNAPSHOT), TpaGui (1.2.0-beta.1), ViaVersion (5.7.1), floodgate (2.2.5-SNAPSHOT (b126-096c605))
+[00:51:33 INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[00:51:35 INFO]: Loaded 1407 recipes
+[00:51:35 INFO]: Loaded 1520 advancements
+[00:51:35 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
+[00:51:36 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 479.1ms
+[00:51:36 INFO]: Starting minecraft server version 1.21.8
+[00:51:36 WARN]: ****************************
+[00:51:36 WARN]: YOU ARE RUNNING THIS SERVER AS AN ADMINISTRATIVE OR ROOT USER. THIS IS NOT ADVISED.
+[00:51:36 WARN]: YOU ARE OPENING YOURSELF UP TO POTENTIAL RISKS WHEN DOING THIS.
+[00:51:36 WARN]: FOR MORE INFORMATION, SEE https://madelinemiller.dev/blog/root-minecraft-server/
+[00:51:36 WARN]: ****************************
+[00:51:36 INFO]: Loading properties
+[00:51:36 INFO]: This server is running Paper version 1.21.8-60-main@29c8822 (2025-09-06T21:49:13Z) (Implementing API version 1.21.8-R0.1-SNAPSHOT)
+[00:51:36 INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[00:51:36 INFO]: Server Ping Player Sample Count: 12
+[00:51:36 INFO]: Using 4 threads for Netty based IO
+[00:51:37 INFO]: [MoonriseCommon] Paper is using 1 worker threads, 1 I/O threads
+[00:51:37 INFO]: [ChunkTaskScheduler] Chunk system is using population gen parallelism: true
+=>....[00:51:37 INFO]: Default game type: SURVIVAL
+>....[00:51:37 INFO]: Generating keypair
+>....[00:51:37 INFO]: Starting Minecraft server on 0.0.0.0:19745
+>....[00:51:38 INFO]: Using epoll channel type
+>....[00:51:38 INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+>....[00:51:38 INFO]: Paper: Using OpenSSL 1.1.x (Linux x86_64) cipher from Velocity.
+>....[00:51:38 INFO]: [floodgate] Loading server plugin floodgate v2.2.5-SNAPSHOT (b126-096c605)
+>....[00:51:38 ERROR]: Failed to request yggdrasil public key
+com.mojang.authlib.exceptions.MinecraftClientException: Failed to read from https://api.minecraftservices.com/publickeys due to Connect timed out
+at com.mojang.authlib.minecraft.client.MinecraftClient.readInputStream(MinecraftClient.java:111) ~[authlib-6.0.58.jar:?]
+at com.mojang.authlib.minecraft.client.MinecraftClient.get(MinecraftClient.java:56) ~[authlib-6.0.58.jar:?]
+at com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo.fetch(YggdrasilServicesKeyInfo.java:114) ~[authlib-6.0.58.jar:?]
+at com.mojang.authlib.yggdrasil.YggdrasilServicesKeyInfo$1.run(YggdrasilServicesKeyInfo.java:89) ~[authlib-6.0.58.jar:?]
+at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[?:?]
+at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[?:?]
+at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[?:?]
+at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[?:?]
+at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[?:?]
+at java.base/java.lang.Thread.run(Thread.java:1583) ~[?:?]
+Caused by: java.net.SocketTimeoutException: Connect timed out
+at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:546) ~[?:?]
+at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592) ~[?:?]
+at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327) ~[?:?]
+at java.base/java.net.Socket.connect(Socket.java:751) ~[?:?]
+at java.base/sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:304) ~[?:?]
+at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178) ~[?:?]
+at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531) ~[?:?]
+at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636) ~[?:?]
+at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:264) ~[?:?]
+at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:377) ~[?:?]
+at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:193) ~[?:?]
+at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1282) ~[?:?]
+at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1123) ~[?:?]
+at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:179) ~[?:?]
+at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1675) ~[?:?]
+at java.base/sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1599) ~[?:?]
+at java.base/java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:531) ~[?:?]
+at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:307) ~[?:?]
+at com.mojang.authlib.minecraft.client.MinecraftClient.readInputStream(MinecraftClient.java:82) ~[authlib-6.0.58.jar:?]
+... 9 more
+>....[00:51:39 INFO]: [floodgate] 启动 Floodgate，耗时1,086ms
+>....[00:51:39 INFO]: [ViaVersion] Loading server plugin ViaVersion v5.7.1
+>....[00:51:39 INFO]: [ViaVersion] ViaVersion 5.7.1 is now loaded. Registering protocol transformers and injecting...
+>....[00:51:40 INFO]: [ViaVersion] Loading block connection mappings ...
+>....[00:51:40 INFO]: [ViaVersion] Using FastUtil Long2ObjectOpenHashMap for block connections
+>....[00:51:40 INFO]: [TpaGui] Loading server plugin TpaGui v1.2.0-beta.1
+>....[00:51:40 INFO]: [Geyser-Spigot] Loading server plugin Geyser-Spigot v2.9.2-SNAPSHOT
+>....[00:51:41 INFO]: [Geyser-Spigot] 正在加载扩展...
+>....[00:51:41 INFO]: [Geyser-Spigot] 已加载 0 个扩展
+>....[00:51:41 INFO]: Server permissions file permissions.yml is empty, ignoring it
+>....[00:51:41 WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+>....[00:51:41 WARN]: The server will make no attempt to authenticate usernames. Beware.
+>....[00:51:41 WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+>....[00:51:41 WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+>....[00:51:41 INFO]: Preparing level "world"
+>....[00:51:42 INFO]: Preparing start region for dimension minecraft:overworld
+>....[00:51:42 INFO]: Preparing spawn area: 0%
+>....[00:51:43 INFO]: Preparing spawn area: 2%
+>....[00:51:43 INFO]: Preparing spawn area: 2%
+>....[00:51:43 INFO]: Time elapsed: 1229 ms
+>....[00:51:43 INFO]: Preparing start region for dimension minecraft:the_nether
+>....[00:51:43 INFO]: Preparing spawn area: 0%
+>....[00:51:43 INFO]: Time elapsed: 154 ms
+>....[00:51:43 INFO]: Preparing start region for dimension minecraft:the_end
+>....[00:51:43 INFO]: Preparing spawn area: 0%
+>....[00:51:43 INFO]: Time elapsed: 115 ms
+>....[00:51:43 INFO]: [floodgate] Enabling floodgate v2.2.5-SNAPSHOT (b126-096c605)
+>....[00:51:44 INFO]: [ViaVersion] Enabling ViaVersion v5.7.1
+>....[00:51:44 INFO]: [ViaVersion] ViaVersion detected server version: 1.21.7-1.21.8 (772)
+>....[00:51:44 INFO]: [TpaGui] Enabling TpaGui v1.2.0-beta.1
+>....[00:51:44 INFO]: [TpaGui] 已检测到 Folia 环境，已启用区域调度器支持
+>....[00:51:44 INFO]: [TpaGui] 已检测到Floodgate，基岩版表单支持已启用
+>....[00:51:44 INFO]: [Geyser-Spigot] Enabling Geyser-Spigot v2.9.2-SNAPSHOT
+>....[00:51:46 INFO]: [spark] Starting background profiler...
+>....[00:51:47 INFO]: [Geyser-Spigot] ******************************************
+>....[00:51:47 INFO]: [Geyser-Spigot] 
+>....[00:51:47 INFO]: [Geyser-Spigot] 正在加载 Geyser 版本 2.9.2-b1047 (git-master-ec6dbf6)
+>....[00:51:47 INFO]: [Geyser-Spigot] 
+>....[00:51:47 INFO]: [Geyser-Spigot] ******************************************
+>....[00:51:49 WARN]: [TpaGui] 更新检查失败: HTTP 403 (Rate Limited? Limit: 60, Remaining: 0)
+>....[00:51:49 INFO]: [TpaGui] 你正在使用最新版本: 1.2.0-beta.1
+>....[00:51:54 INFO]: [Geyser-Spigot] 已在 UDP 端口 19745 上启动 Geyser
+>....[00:51:54 INFO]: [Geyser-Spigot] 完成 (6.322秒)！ 运行 /geyser help 以获取帮助！
+>....[00:51:54 INFO]: Done preparing level "world" (13.056s)
+>....[00:51:54 INFO]: Running delayed init tasks
+>....[00:51:54 INFO]: Done (30.057s)! For help, type "help"
+>....[00:51:54 INFO]: [ViaVersion] Finished mapping loading, shutting down loader executor.

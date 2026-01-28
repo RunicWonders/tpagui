@@ -1,6 +1,9 @@
 package cn.ningmo.tpagui.velocity;
 
+import cn.ningmo.tpagui.UpdateChecker;
 import com.google.inject.Inject;
+import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.plugin.Plugin;
@@ -15,13 +18,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(
     id = "tpagui",
     name = "TpaGui",
-    version = "1.2.0-beta.1",
+    version = "1.2.0-beta.2",
     description = "A simple TPA GUI plugin for Velocity",
-    authors = {"NingMo"}
+    authors = {"lemwood"}
 )
 public class VelocityTpaGui {
 
@@ -29,6 +33,7 @@ public class VelocityTpaGui {
     private final Logger logger;
     private final Path dataDirectory;
     private CommentedConfigurationNode config;
+    private UpdateChecker updateChecker;
 
     @Inject
     public VelocityTpaGui(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -42,6 +47,38 @@ public class VelocityTpaGui {
         loadConfig();
         logger.info(getLogMessage("velocity-enabled"));
         logger.info(getLogMessage("velocity-environment"));
+        
+        // 注册命令
+        CommandManager commandManager = server.getCommandManager();
+        CommandMeta meta = commandManager.metaBuilder("tpagui")
+                .aliases("tpag", "tgui")
+                .plugin(this)
+                .build();
+        commandManager.register(meta, new VelocityTpaGuiCommand(this, server));
+        
+        // 初始化更新检查器
+        updateChecker = new UpdateChecker(
+            "1.2.0-beta.1",
+            msg -> logger.warn(msg),
+            key -> getLogMessage(key),
+            () -> config.node("update-check", "enabled").getBoolean(true)
+        );
+        
+        // 检查更新
+        server.getScheduler().buildTask(this, () -> {
+            checkForUpdates();
+        }).delay(5, TimeUnit.SECONDS).schedule();
+    }
+
+    private void checkForUpdates() {
+        updateChecker.checkForUpdates().thenAccept(hasUpdate -> {
+            if (hasUpdate) {
+                updateChecker.notifyUpdate();
+            } else {
+                logger.info(getLogMessage("update-latest",
+                    "{version}", updateChecker.getCurrentVersion()));
+            }
+        });
     }
 
     private void loadConfig() {

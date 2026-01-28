@@ -1,5 +1,6 @@
 name: TpaGui
-version: 1.2.0-beta.1
+version: 1.2.0-beta.2
+author: lemwood
 main: cn.ningmo.tpagui.TpaGui
 api-version: '1.21'
 softdepend: [floodgate]

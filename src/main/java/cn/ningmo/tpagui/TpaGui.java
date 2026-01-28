@@ -15,8 +15,9 @@ public class TpaGui extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
-        // 保存默认配置
+        // 保存并加载配置
         saveDefaultConfig();
+        reloadConfig();
         
         // 检查是否在 Velocity 代理环境下
         if (getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
@@ -31,13 +32,7 @@ public class TpaGui extends JavaPlugin {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             isFolia = true;
         } catch (ClassNotFoundException e) {
-            // 尝试通过方法检查作为回退
-            try {
-                getServer().getAsyncScheduler();
-                isFolia = true;
-            } catch (Throwable ignored) {
-                isFolia = false;
-            }
+            isFolia = false;
         }
         
         if (isFolia) {
@@ -91,11 +86,31 @@ public class TpaGui extends JavaPlugin {
         updateChecker.checkForUpdates().thenAccept(hasUpdate -> {
             if (hasUpdate) {
                 updateChecker.notifyUpdate();
+                // 发送给在线管理员
+                if (isFolia) {
+                    getServer().getGlobalRegionScheduler().run(this, (task) -> sendUpdateMessageToAdmins());
+                } else {
+                    getServer().getScheduler().runTask(this, this::sendUpdateMessageToAdmins);
+                }
             } else {
                 getLogger().info(getLogMessage("update-latest",
                     "{version}", updateChecker.getCurrentVersion()));
             }
         });
+    }
+
+    /**
+     * 发送更新消息给管理员
+     */
+    private void sendUpdateMessageToAdmins() {
+        String playerMessage = getMessage("update-available",
+            "{current}", updateChecker.getCurrentVersion(),
+            "{latest}", updateChecker.getLatestVersion(),
+            "{url}", updateChecker.getDownloadUrl());
+        
+        getServer().getOnlinePlayers().stream()
+            .filter(player -> player.hasPermission("tpagui.admin"))
+            .forEach(player -> player.sendMessage(playerMessage));
     }
     
     /**
