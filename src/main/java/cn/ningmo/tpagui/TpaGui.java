@@ -8,11 +8,30 @@ import org.bukkit.command.PluginCommand;
 public class TpaGui extends JavaPlugin {
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
+    private boolean isFolia = false;
     private UpdateChecker updateChecker;
     
     @Override
     public void onEnable() {
         instance = this;
+        
+        // 检查是否为Folia
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            isFolia = true;
+        } catch (ClassNotFoundException e) {
+            // 尝试通过方法检查作为回退
+            try {
+                getServer().getAsyncScheduler();
+                isFolia = true;
+            } catch (Throwable ignored) {
+                isFolia = false;
+            }
+        }
+        
+        if (isFolia) {
+            getLogger().info("Detected Folia environment. Using Folia schedulers.");
+        }
         
         // 保存默认配置
         saveDefaultConfig();
@@ -38,9 +57,19 @@ public class TpaGui extends JavaPlugin {
         updateChecker = new UpdateChecker(this);
         
         // 检查更新（延迟5秒，避免影响启动速度）
-        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
-            checkForUpdates();
-        }, 100L); // 5秒 = 100 ticks
+        if (isFolia) {
+            getServer().getAsyncScheduler().runDelayed(this, (task) -> {
+                checkForUpdates();
+            }, 5, java.util.concurrent.TimeUnit.SECONDS);
+        } else {
+            getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+                checkForUpdates();
+            }, 100L); // 5秒 = 100 ticks
+        }
+    }
+    
+    public boolean isFolia() {
+        return isFolia;
     }
     
     /**

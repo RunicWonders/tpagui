@@ -1,8 +1,9 @@
 name: TpaGui
-version: 1.1.0
+version: 1.2.0-beta.1
 main: cn.ningmo.tpagui.TpaGui
 api-version: '1.21'
 softdepend: [floodgate]
+folia-supported: true
 
 commands:
   tpagui:

@@ -182,7 +182,11 @@ public class UpdateChecker {
         if (Bukkit.isPrimaryThread()) {
             sendUpdateMessageToAdmins();
         } else {
-            Bukkit.getScheduler().runTask(plugin, this::sendUpdateMessageToAdmins);
+            if (plugin.isFolia()) {
+                Bukkit.getGlobalRegionScheduler().run(plugin, (task) -> sendUpdateMessageToAdmins());
+            } else {
+                Bukkit.getScheduler().runTask(plugin, this::sendUpdateMessageToAdmins);
+            }
         }
     }
     

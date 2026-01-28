@@ -80,12 +80,14 @@ public class BedrockFormManager {
                     );
                     
                     // 执行命令
-                    player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                    try {
-                        player.chat(command);
-                    } finally {
-                        player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                    }
+                    runTask(player, () -> {
+                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+                        try {
+                            player.chat(command);
+                        } finally {
+                            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+                        }
+                    });
                 } catch (Exception e) {
                     if (response != null) {  // 只在非关闭表单时显示错误
                         player.sendMessage(TpaGui.getInstance().getMessage("form-error"));
@@ -127,26 +129,43 @@ public class BedrockFormManager {
     }
 
     private static void executeDenyCommands(Player player) {
-        List<String> denyCommands = TpaGui.getInstance().getConfig().getStringList("commands.deny");
-        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-        try {
-            for (String cmd : denyCommands) {
-                player.chat("/" + cmd);
+        runTask(player, () -> {
+            List<String> denyCommands = TpaGui.getInstance().getConfig().getStringList("commands.deny");
+            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+            try {
+                for (String cmd : denyCommands) {
+                    player.chat("/" + cmd);
+                }
+            } finally {
+                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
             }
-        } finally {
-            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-        }
+        });
     }
 
     private static void executeAcceptCommands(Player player, String requester) {
-        List<String> acceptCommands = TpaGui.getInstance().getConfig().getStringList("commands.accept");
-        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-        try {
-            for (String cmd : acceptCommands) {
-                player.chat("/" + cmd + " " + requester);
+        runTask(player, () -> {
+            List<String> acceptCommands = TpaGui.getInstance().getConfig().getStringList("commands.accept");
+            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
+            try {
+                for (String cmd : acceptCommands) {
+                    player.chat("/" + cmd + " " + requester);
+                }
+            } finally {
+                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
             }
-        } finally {
-            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
+        });
+    }
+
+    /**
+     * 在玩家所在线程执行任务（兼容Folia）
+     * @param player 玩家
+     * @param runnable 任务
+     */
+    private static void runTask(Player player, Runnable runnable) {
+        if (TpaGui.getInstance().isFolia()) {
+            player.getScheduler().run(TpaGui.getInstance(), (task) -> runnable.run(), null);
+        } else {
+            Bukkit.getScheduler().runTask(TpaGui.getInstance(), runnable);
         }
     }
 
