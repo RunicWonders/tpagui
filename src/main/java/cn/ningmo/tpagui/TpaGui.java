@@ -15,6 +15,15 @@ public class TpaGui extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
+        // 检查是否在 Velocity 代理环境下
+        if (getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
+            getServer().spigot().getConfig().getBoolean("settings.bungeecord", false)) {
+            getLogger().info("Detected Proxy environment (Velocity/BungeeCord).");
+            getLogger().info("TpaGui will be disabled on sub-servers to avoid conflicts with the Proxy version.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         // 检查是否为Folia
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
