@@ -2,6 +2,9 @@
 
 一个简单的为TPA提供GUI功能的插件，支持箱子菜单和基岩版表单。
 
+[![Modrinth](https://img.shields.io/modrinth/v/tpagui?label=Modrinth&logo=modrinth)](https://modrinth.com/plugin/tpagui)
+[![GitHub](https://img.shields.io/github/v/release/RunicWonders/tpagui?label=GitHub&logo=github)](https://github.com/RunicWonders/tpagui/releases)
+
 ## 功能
 
 ### Java版
