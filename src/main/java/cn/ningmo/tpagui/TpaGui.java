@@ -15,11 +15,13 @@ public class TpaGui extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
+        // 保存默认配置
+        saveDefaultConfig();
+        
         // 检查是否在 Velocity 代理环境下
         if (getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
             getServer().spigot().getConfig().getBoolean("settings.bungeecord", false)) {
-            getLogger().info("Detected Proxy environment (Velocity/BungeeCord).");
-            getLogger().info("TpaGui will be disabled on sub-servers to avoid conflicts with the Proxy version.");
+            getLogger().info(getLogMessage("proxy-detected"));
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -39,11 +41,8 @@ public class TpaGui extends JavaPlugin {
         }
         
         if (isFolia) {
-            getLogger().info("Detected Folia environment. Using Folia schedulers.");
+            getLogger().info(getLogMessage("folia-detected"));
         }
-        
-        // 保存默认配置
-        saveDefaultConfig();
         
         // 检查Floodgate
         if (getServer().getPluginManager().getPlugin("floodgate") != null) {
