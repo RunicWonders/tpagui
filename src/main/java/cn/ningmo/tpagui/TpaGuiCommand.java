@@ -23,6 +23,13 @@ public class TpaGuiCommand implements CommandExecutor {
         
         Player player = (Player) sender;
         
+        // 如果开启了 Velocity 模式，且需要更新玩家列表
+        if (TpaGui.getInstance().getConfig().getBoolean("velocity.enabled", false)) {
+            if (cn.ningmo.tpagui.data.PlayerManager.shouldUpdate()) {
+                cn.ningmo.tpagui.data.PlayerManager.requestUpdate(player);
+            }
+        }
+        
         // 检查是否为基岩版玩家
         if (TpaGui.getInstance().isFloodgateEnabled()) {
             try {

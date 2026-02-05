@@ -1,17 +1,19 @@
 package cn.ningmo.tpagui.menu;
 
+import cn.ningmo.tpagui.TpaGui;
+import cn.ningmo.tpagui.data.GlobalPlayer;
+import cn.ningmo.tpagui.data.PlayerManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.ChatColor;
-import cn.ningmo.tpagui.TpaGui;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class GuiManager {
     private static final int ROWS = 6;
@@ -24,11 +26,21 @@ public class GuiManager {
         Inventory inv = Bukkit.createInventory(null, ROWS * 9, 
             plugin.getMessage("gui.title", "{page}", String.valueOf(page + 1)));
         
-        // 获取所有在线玩家（排除当前玩家）
-        List<Player> availablePlayers = new ArrayList<>();
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p != player) {
-                availablePlayers.add(p);
+        List<Object> availablePlayers = new ArrayList<>();
+        
+        if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
+            // Velocity 模式：获取全局玩家
+            for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
+                if (!gp.getUuid().equals(player.getUniqueId())) {
+                    availablePlayers.add(gp);
+                }
+            }
+        } else {
+            // 普通模式：获取在线玩家
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (!p.getUniqueId().equals(player.getUniqueId())) {
+                    availablePlayers.add(p);
+                }
             }
         }
         
@@ -40,15 +52,17 @@ public class GuiManager {
         int startIndex = page * playersPerPage;
         int slotIndex = 0;
         for (int i = startIndex; i < availablePlayers.size() && slotIndex < playersPerPage; i++) {
-            Player target = availablePlayers.get(i);
-            // 再次验证玩家是否在线（可能在获取列表后离线）
-            if (target != null && target.isOnline()) {
-                ItemStack skull = createPlayerSkull(target);
-                // 只添加有效的头颅（不是空的ItemStack）
-                if (skull != null && skull.getItemMeta() != null) {
-                    inv.setItem(slotIndex, skull);
-                    slotIndex++;
-                }
+            Object target = availablePlayers.get(i);
+            ItemStack skull = null;
+            if (target instanceof Player) {
+                skull = createPlayerSkull((Player) target);
+            } else if (target instanceof GlobalPlayer) {
+                skull = createGlobalPlayerSkull((GlobalPlayer) target);
+            }
+            
+            if (skull != null && skull.getItemMeta() != null) {
+                inv.setItem(slotIndex, skull);
+                slotIndex++;
             }
         }
         
@@ -108,6 +122,30 @@ public class GuiManager {
         skull.setItemMeta(meta);
         return skull;
     }
+
+    private static ItemStack createGlobalPlayerSkull(GlobalPlayer gp) {
+        TpaGui plugin = TpaGui.getInstance();
+        
+        ItemStack skull = new ItemStack(Material.PLAYER_HEAD, 1);
+        SkullMeta meta = (SkullMeta) skull.getItemMeta();
+        if (meta == null) return null;
+        
+        try {
+            meta.setOwningPlayer(Bukkit.getOfflinePlayer(gp.getUuid()));
+        } catch (Exception ignored) {}
+        
+        meta.setDisplayName(plugin.getMessage("gui.skull.name", "{player}", gp.getName()));
+        
+        List<String> lore = new ArrayList<>();
+        for (String line : plugin.getConfig().getStringList("messages.gui.skull.lore")) {
+            String processedLine = line.replace("{server}", gp.getServer());
+            lore.add(ChatColor.translateAlternateColorCodes('&', processedLine));
+        }
+        meta.setLore(lore);
+        
+        skull.setItemMeta(meta);
+        return skull;
+    }
     
     private static ItemStack createNavigationItem(Material material, String name) {
         ItemStack item = new ItemStack(material, 1);
@@ -118,4 +156,4 @@ public class GuiManager {
         }
         return item;
     }
-} 
+}

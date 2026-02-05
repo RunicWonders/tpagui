@@ -16,16 +16,47 @@ public class TpaGui extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
-        // 保存并加载配置
-        saveDefaultConfig();
-        reloadConfig();
+        // 1. 确保配置文件已释放到磁盘
+        // 即使之后由于环境检查而禁用，也要确保用户能看到配置文件
+        try {
+            saveDefaultConfig();
+            reloadConfig();
+        } catch (Exception e) {
+            getLogger().severe("无法释放或加载配置文件: " + e.getMessage());
+        }
         
-        // 检查是否在 Velocity 代理环境下
-        if (getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
-            getServer().spigot().getConfig().getBoolean("settings.bungeecord", false)) {
-            getLogger().info(getLogMessage("proxy-detected"));
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+        // 2. 检查是否在代理环境下（BungeeCord/Velocity 子服）
+        boolean isProxy = false;
+        try {
+            // 检查 Spigot 的 BungeeCord 设置
+            isProxy = getServer().spigot().getConfig().getBoolean("settings.bungeecord", false);
+        } catch (Throwable ignored) {
+            // 非 Spigot 环境，尝试通过消息通道判断
+            isProxy = getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
+                      getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
+        }
+        
+        if (isProxy) {
+            // 如果在代理环境下，检查是否开启了 Velocity 跨服模式
+            if (getConfig().getBoolean("velocity.enabled", false)) {
+                getLogger().info(getLogMessage("velocity-mode-enabled"));
+                // 注册插件消息通道
+                getServer().getMessenger().registerOutgoingPluginChannel(this, "tpagui:main");
+                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", new cn.ningmo.tpagui.messaging.PluginMessageHandler());
+            } else {
+                // 不再自动禁用插件，仅输出环境提示
+                getLogger().info(getLogMessage("proxy-detected"));
+                getLogger().info("当前处于代理子服环境，但未开启跨服模式 (velocity.enabled: false)。");
+                getLogger().info("插件将以本地模式运行。");
+            }
+        } else {
+            // 非代理环境下，如果开启了 velocity.enabled，也需要注册通道
+            // 某些环境下 isProxy 检测可能不准确
+            if (getConfig().getBoolean("velocity.enabled", false)) {
+                getLogger().info("未检测到代理环境，但 velocity.enabled 为 true，正在注册消息通道...");
+                getServer().getMessenger().registerOutgoingPluginChannel(this, "tpagui:main");
+                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", new cn.ningmo.tpagui.messaging.PluginMessageHandler());
+            }
         }
 
         // 检查是否为Folia

@@ -38,12 +38,27 @@ public class TpaRequestListener implements Listener {
         // 获取目标玩家
         String targetName = args[1];
         Player target = event.getPlayer().getServer().getPlayer(targetName);
-        if (target == null) return;
-
         TpaGui plugin = TpaGui.getInstance();
         String tpaHereCommand = plugin.getConfig().getString("commands.tpa.here", "tpahere");
         boolean isTpaHere = command.startsWith("/" + tpaHereCommand.toLowerCase() + " ");
-        
+
+        if (target == null) {
+            // 如果本地找不到，检查是否为跨服玩家
+            if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
+                cn.ningmo.tpagui.data.GlobalPlayer gp = cn.ningmo.tpagui.data.PlayerManager.getGlobalPlayer(targetName);
+                if (gp != null) {
+                    // 发送跨服请求通知给 Velocity
+                    com.google.common.io.ByteArrayDataOutput out = com.google.common.io.ByteStreams.newDataOutput();
+                    out.writeUTF("ShowRequest");
+                    out.writeUTF(targetName);
+                    out.writeUTF(event.getPlayer().getName());
+                    out.writeBoolean(isTpaHere);
+                    event.getPlayer().sendPluginMessage(plugin, "tpagui:main", out.toByteArray());
+                }
+            }
+            return;
+        }
+
         // 检查目标玩家是否为基岩版玩家
         if (plugin.isFloodgateEnabled()) {
             try {

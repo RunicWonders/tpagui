@@ -65,6 +65,19 @@ messages:
     velocity-environment: "已检测到 Velocity 环境，所有连接的玩家将由该代理实例管理"
     dialog-supported: "已检测到 1.21.6+ 环境，已启用原生 /dialog GUI 支持"
     dialog-sent: "已向 {player} 发送 /dialog 请求: {dialog}"
+    velocity-mode-enabled: "已启用 Velocity 跨服同步模式"
+
+# Velocity 跨服同步配置
+velocity:
+  # 是否启用 Velocity 跨服模式
+  # 启用后，子服将不再自动禁用，而是从 Velocity 获取全服玩家列表
+  enabled: false
+  # 当前服务器在 Velocity 中的名称 (需与 velocity 配置文件中的名称一致)
+  server-name: "subserver1"
+  # 是否在 GUI 中显示其他服务器的玩家
+  show-cross-server-players: true
+  # 同步间隔 (秒)，0 表示仅在打开 GUI 时按需同步
+  sync-interval: 0
 
 # 更新检查配置
 update-check:

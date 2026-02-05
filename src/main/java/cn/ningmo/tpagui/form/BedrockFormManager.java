@@ -1,16 +1,14 @@
 package cn.ningmo.tpagui.form;
 
 import cn.ningmo.tpagui.TpaGui;
+import cn.ningmo.tpagui.data.GlobalPlayer;
+import cn.ningmo.tpagui.data.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.geysermc.cumulus.CustomForm;
-import org.geysermc.cumulus.response.CustomFormResponse;
-import org.geysermc.floodgate.api.FloodgateApi;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
 import org.geysermc.cumulus.SimpleForm;
-import org.geysermc.cumulus.component.ButtonComponent;
 import org.geysermc.cumulus.util.FormImage;
+import org.geysermc.floodgate.api.FloodgateApi;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -19,6 +17,19 @@ import java.util.List;
 import java.util.UUID;
 
 public class BedrockFormManager {
+    
+    // 内部类，用于统一处理本地和跨服玩家
+    private static class TargetInfo {
+        final String name;
+        final UUID uuid;
+        final String server;
+
+        TargetInfo(String name, UUID uuid, String server) {
+            this.name = name;
+            this.uuid = uuid;
+            this.server = server;
+        }
+    }
     
     public static void openTpaForm(Player player) {
         openTpaForm(player, 0);
@@ -31,10 +42,21 @@ public class BedrockFormManager {
         String avatarApi = plugin.getConfig().getString("java-dialog-gui.avatar-api", "https://mc-heads.net/avatar/{uuid}/64");
 
         // 获取在线玩家列表（排除自己）
-        List<Player> availablePlayers = new ArrayList<>();
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p != player) {
-                availablePlayers.add(p);
+        List<TargetInfo> availablePlayers = new ArrayList<>();
+        
+        if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
+            // Velocity 模式：获取全局玩家
+            for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
+                if (!gp.getUuid().equals(player.getUniqueId())) {
+                    availablePlayers.add(new TargetInfo(gp.getName(), gp.getUuid(), gp.getServer()));
+                }
+            }
+        } else {
+            // 普通模式：获取本地在线玩家
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p != player) {
+                    availablePlayers.add(new TargetInfo(p.getName(), p.getUniqueId(), "local"));
+                }
             }
         }
         
@@ -55,15 +77,17 @@ public class BedrockFormManager {
 
         // 添加玩家按钮
         for (int i = start; i < end; i++) {
-            Player target = availablePlayers.get(i);
-            String name = target.getName();
-            UUID uuid = target.getUniqueId();
+            TargetInfo target = availablePlayers.get(i);
+            String buttonText = target.name;
+            if (!target.server.equals("local") && !target.server.equals("unknown")) {
+                buttonText += " (" + target.server + ")";
+            }
             
             if (showAvatars) {
-                String imageUrl = avatarApi.replace("{uuid}", uuid.toString()).replace("{name}", name);
-                formBuilder.button(name, FormImage.Type.URL, imageUrl);
+                String imageUrl = avatarApi.replace("{uuid}", target.uuid.toString()).replace("{name}", target.name);
+                formBuilder.button(buttonText, FormImage.Type.URL, imageUrl);
             } else {
-                formBuilder.button(name);
+                formBuilder.button(buttonText);
             }
         }
 
@@ -87,7 +111,7 @@ public class BedrockFormManager {
 
                 if (buttonId < playerCountOnPage) {
                     // 点击了玩家按钮
-                    Player target = availablePlayers.get(start + buttonId);
+                    TargetInfo target = availablePlayers.get(start + buttonId);
                     openActionSelectForm(player, target);
                 } else {
                     // 点击了导航按钮
@@ -110,12 +134,12 @@ public class BedrockFormManager {
         sendForm(player, formBuilder.build());
     }
 
-    private static void openActionSelectForm(Player player, Player target) {
+    private static void openActionSelectForm(Player player, TargetInfo target) {
         TpaGui plugin = TpaGui.getInstance();
         SimpleForm form = SimpleForm.builder()
-            .title(plugin.getMessage("form.player-select") + ": " + target.getName())
-            .button(plugin.getConfig().getString("commands.tpa.to-player", "tpa") + " " + target.getName())
-            .button(plugin.getConfig().getString("commands.tpa.here", "tpahere") + " " + target.getName())
+            .title(plugin.getMessage("form.player-select") + ": " + target.name)
+            .button(plugin.getConfig().getString("commands.tpa.to-player", "tpa") + " " + target.name)
+            .button(plugin.getConfig().getString("commands.tpa.here", "tpahere") + " " + target.name)
             .responseHandler((form1, response) -> {
                 if (response == null) return;
                 
@@ -124,7 +148,7 @@ public class BedrockFormManager {
                     plugin.getConfig().getString("commands.tpa.to-player", "tpa") : 
                     plugin.getConfig().getString("commands.tpa.here", "tpahere");
                 
-                String fullCommand = "/" + cmdName + " " + target.getName();
+                String fullCommand = "/" + cmdName + " " + target.name;
                 
                 runTask(player, () -> {
                     player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));

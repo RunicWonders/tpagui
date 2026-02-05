@@ -1,5 +1,6 @@
 package cn.ningmo.tpagui;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -77,13 +78,18 @@ public class MenuListener implements Listener {
             }
 
             SkullMeta skullMeta = (SkullMeta) meta;
-            if (skullMeta.getOwningPlayer() == null) {
-                return;
+            String targetName = null;
+            
+            if (skullMeta.getOwningPlayer() != null) {
+                targetName = skullMeta.getOwningPlayer().getName();
+            } else if (skullMeta.hasDisplayName()) {
+                // 回退逻辑：尝试从显示名称解析 (去除颜色代码和前缀)
+                String displayName = ChatColor.stripColor(skullMeta.getDisplayName());
+                String namePrefix = ChatColor.stripColor(TpaGui.getInstance().getMessage("gui.skull.name", "{player}", ""));
+                targetName = displayName.replace(namePrefix, "").trim();
             }
             
-            Player target = skullMeta.getOwningPlayer().getPlayer();
-            
-            if (target == null || !target.isOnline()) {
+            if (targetName == null || targetName.isEmpty()) {
                 player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
                 return;
             }
@@ -94,25 +100,18 @@ public class MenuListener implements Listener {
             
             // 构建命令
             String command = event.isLeftClick() ? 
-                "/" + tpaCommand + " " + target.getName() : 
-                "/" + tpaHereCommand + " " + target.getName();
+                tpaCommand + " " + targetName : 
+                tpaHereCommand + " " + targetName;
             
             // 记录到控制台
             TpaGui.getInstance().getLogger().info(
                 TpaGui.getInstance().getLogMessage("gui-command-executed", 
                     "{player}", player.getName(), 
-                    "{command}", command)
+                    "{command}", "/" + command)
             );
             
             // 执行命令
-            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-            try {
-                // 使用 dispatchCommand 替代 player.chat 避免某些插件对 chat 事件的干扰或限制
-                TpaGui.getInstance().getServer().dispatchCommand(player, command.substring(1));
-            } finally {
-                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-            }
-            
+            player.chat("/" + command);
             player.closeInventory();
         }
     }
