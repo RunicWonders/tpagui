@@ -124,11 +124,11 @@ public class VelocityTpaGui {
         if (config == null) return key;
         
         // 尝试从 messages.log 获取
-        String message = config.node("messages", "log", key).getString(null);
+        String message = config.node("messages", "log", key).getString();
         
         // 如果没有，尝试从 messages 直接获取
         if (message == null) {
-            message = config.node("messages", key).getString(null);
+            message = config.node("messages", key).getString();
         }
 
         // 如果还是没有，返回 key 本身
