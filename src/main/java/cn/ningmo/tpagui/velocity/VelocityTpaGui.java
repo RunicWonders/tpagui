@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
     id = "tpagui",
     name = "TpaGui",
-    version = "1.2.0-beta.3",
+    version = "1.2.0-beta.4",
     description = "A simple TPA GUI plugin for Velocity",
     authors = {"lemwood"}
 )
@@ -42,6 +42,14 @@ public class VelocityTpaGui {
         this.dataDirectory = dataDirectory;
     }
 
+    public ProxyServer getServer() {
+        return server;
+    }
+
+    public CommentedConfigurationNode getConfig() {
+        return config;
+    }
+
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         loadConfig();
@@ -58,7 +66,7 @@ public class VelocityTpaGui {
         
         // 初始化更新检查器
         updateChecker = new UpdateChecker(
-            "1.2.0-beta.3",
+            "1.2.0-beta.4",
             msg -> logger.warn(msg),
             key -> getLogMessage(key),
             () -> config.node("update-check", "enabled").getBoolean(true)
@@ -114,17 +122,21 @@ public class VelocityTpaGui {
 
     public String getLogMessage(String key, String... placeholders) {
         if (config == null) return key;
-        String message = config.node("messages", "log", key).getString(key);
+        
+        // 尝试从 messages.log 获取
+        String message = config.node("messages", "log", key).getString(null);
+        
+        // 如果没有，尝试从 messages 直接获取
+        if (message == null) {
+            message = config.node("messages", key).getString(key);
+        }
+        
         for (int i = 0; i < placeholders.length; i += 2) {
             if (i + 1 < placeholders.length) {
                 message = message.replace(placeholders[i], placeholders[i + 1]);
             }
         }
         return message;
-    }
-
-    public ProxyServer getServer() {
-        return server;
     }
 
     public Logger getLogger() {
