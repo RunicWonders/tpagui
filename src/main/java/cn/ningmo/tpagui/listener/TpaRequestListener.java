@@ -2,6 +2,7 @@ package cn.ningmo.tpagui.listener;
 
 import cn.ningmo.tpagui.TpaGui;
 import cn.ningmo.tpagui.form.BedrockFormManager;
+import cn.ningmo.tpagui.form.JavaDialogManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -38,39 +39,44 @@ public class TpaRequestListener implements Listener {
         String targetName = args[1];
         Player target = event.getPlayer().getServer().getPlayer(targetName);
         if (target == null) return;
+
+        TpaGui plugin = TpaGui.getInstance();
+        String tpaHereCommand = plugin.getConfig().getString("commands.tpa.here", "tpahere");
+        boolean isTpaHere = command.startsWith("/" + tpaHereCommand.toLowerCase() + " ");
         
         // 检查目标玩家是否为基岩版玩家
-        if (TpaGui.getInstance().isFloodgateEnabled()) {
+        if (plugin.isFloodgateEnabled()) {
             try {
                 FloodgateApi api = FloodgateApi.getInstance();
                 if (api != null && api.isFloodgatePlayer(target.getUniqueId())) {
-                    // 从配置文件获取tpahere命令
-                    String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
-                    
-                    // 发送表单
+                    // 发送基岩版表单
                     BedrockFormManager.sendTpaRequestForm(
                         target, 
                         event.getPlayer().getName(), 
-                        command.startsWith("/" + tpaHereCommand.toLowerCase() + " ")
+                        isTpaHere
                     );
                     
                     // 调试信息
-                    String commandType = command.startsWith("/" + tpaHereCommand.toLowerCase() + " ") 
-                        ? tpaHereCommand 
-                        : TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
-                    TpaGui.getInstance().getLogger().info(
-                        TpaGui.getInstance().getLogMessage("send-request-form",
+                    String commandType = isTpaHere ? tpaHereCommand : plugin.getConfig().getString("commands.tpa.to-player", "tpa");
+                    plugin.getLogger().info(
+                        plugin.getLogMessage("send-request-form",
                             "{target}", target.getName(),
                             "{requester}", event.getPlayer().getName(),
                             "{type}", commandType)
                     );
+                    return; // 已处理，返回
                 }
             } catch (Exception e) {
-                TpaGui.getInstance().getLogger().warning(
-                    TpaGui.getInstance().getLogMessage("floodgate-request-error",
+                plugin.getLogger().warning(
+                    plugin.getLogMessage("floodgate-request-error",
                         "{error}", e.getMessage())
                 );
             }
+        }
+
+        // 如果不是基岩版玩家，检查是否支持 Java 1.21.6+ /dialog
+        if (plugin.isDialogSupported() && plugin.getConfig().getBoolean("java-dialog-gui.enabled", true)) {
+            JavaDialogManager.sendTpaRequestDialog(target, event.getPlayer().getName(), isTpaHere);
         }
     }
 }

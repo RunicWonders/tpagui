@@ -9,121 +9,148 @@ import org.geysermc.floodgate.api.FloodgateApi;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import org.geysermc.cumulus.SimpleForm;
+import org.geysermc.cumulus.component.ButtonComponent;
+import org.geysermc.cumulus.util.FormImage;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class BedrockFormManager {
     
     public static void openTpaForm(Player player) {
+        openTpaForm(player, 0);
+    }
+
+    public static void openTpaForm(Player player, int page) {
+        TpaGui plugin = TpaGui.getInstance();
+        int playersPerPage = plugin.getConfig().getInt("java-dialog-gui.players-per-page", 20);
+        boolean showAvatars = plugin.getConfig().getBoolean("java-dialog-gui.show-avatars", true);
+        String avatarApi = plugin.getConfig().getString("java-dialog-gui.avatar-api", "https://mc-heads.net/avatar/{uuid}/64");
+
         // 获取在线玩家列表（排除自己）
-        List<String> playerNames = new ArrayList<>();
+        List<Player> availablePlayers = new ArrayList<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (p != player) {
-                playerNames.add(p.getName());
+                availablePlayers.add(p);
             }
         }
         
-        if (playerNames.isEmpty()) {
-            player.sendMessage(TpaGui.getInstance().getMessage("no-players-online"));
+        if (availablePlayers.isEmpty()) {
+            player.sendMessage(plugin.getMessage("no-players-online"));
             return;
         }
 
+        // 计算分页
+        int totalPlayers = availablePlayers.size();
+        int totalPages = (int) Math.ceil((double) totalPlayers / playersPerPage);
+        int start = page * playersPerPage;
+        int end = Math.min(start + playersPerPage, totalPlayers);
+
         // 创建表单
-        CustomForm form = CustomForm.builder()
-            .title(TpaGui.getInstance().getMessage("form.title"))
-            .dropdown(
-                TpaGui.getInstance().getMessage("form.player-select"),
-                playerNames.toArray(new String[0])
-            )
-            .toggle(
-                TpaGui.getInstance().getMessage("form.tpahere-toggle")
-            )
-            .responseHandler((form1, response) -> {
-                if (response == null) {
-                    // 玩家关闭表单
-                    TpaGui.getInstance().getLogger().info(
-                        TpaGui.getInstance().getLogMessage("form-closed",
-                            "{player}", player.getName())
-                    );
-                    return;
-                }
-                
-                try {
-                    // 解析JSON响应（兼容Gson 2.10.1和1.21.8+）
-                    JsonParser parser = new JsonParser();
-                    JsonArray jsonArray = parser.parse(response).getAsJsonArray();
-                    int selectedIndex = jsonArray.get(0).getAsInt();
-                    boolean isTpaHere = jsonArray.get(1).getAsBoolean();
+        SimpleForm.Builder formBuilder = SimpleForm.builder()
+            .title(plugin.getMessage("form.title") + (totalPages > 1 ? " (" + (page + 1) + "/" + totalPages + ")" : ""));
 
-                    String targetName = playerNames.get(selectedIndex);
-                    Player target = Bukkit.getPlayer(targetName);
-                    if (target == null || !target.isOnline()) {
-                        player.sendMessage(TpaGui.getInstance().getMessage("player-offline"));
-                        return;
-                    }
+        // 添加玩家按钮
+        for (int i = start; i < end; i++) {
+            Player target = availablePlayers.get(i);
+            String name = target.getName();
+            UUID uuid = target.getUniqueId();
+            
+            if (showAvatars) {
+                String imageUrl = avatarApi.replace("{uuid}", uuid.toString()).replace("{name}", name);
+                formBuilder.button(name, FormImage.Type.URL, imageUrl);
+            } else {
+                formBuilder.button(name);
+            }
+        }
 
-                    // 从配置文件获取命令
-                    String tpaCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.to-player", "tpa");
-                    String tpaHereCommand = TpaGui.getInstance().getConfig().getString("commands.tpa.here", "tpahere");
-                    
-                    // 构建命令
-                    String command = isTpaHere ? "/" + tpaHereCommand + " " + targetName : "/" + tpaCommand + " " + targetName;
-                    
-                    // 记录到控制台
-                    TpaGui.getInstance().getLogger().info(
-                        TpaGui.getInstance().getLogMessage("gui-command-executed",
-                            "{player}", player.getName(),
-                            "{command}", command)
-                    );
-                    
-                    // 执行命令
-                    runTask(player, () -> {
-                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-                        try {
-                            player.chat(command);
-                        } finally {
-                            player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-                        }
-                    });
-                } catch (Exception e) {
-                    if (response != null) {  // 只在非关闭表单时显示错误
-                        player.sendMessage(TpaGui.getInstance().getMessage("form-error"));
-                        TpaGui.getInstance().getLogger().warning(
-                            TpaGui.getInstance().getLogMessage("form-response-error",
-                                "{error}", e.getMessage())
-                        );
-                    }
-                }
-            })
-            .build();
+        // 添加导航按钮
+        if (page > 0) {
+            formBuilder.button(plugin.getMessage("gui.navigation.previous-page"), FormImage.Type.PATH, "textures/ui/left_arrow_custom");
+        }
+        if (page < totalPages - 1) {
+            formBuilder.button(plugin.getMessage("gui.navigation.next-page"), FormImage.Type.PATH, "textures/ui/right_arrow_custom");
+        }
 
-        // 发送表单给玩家
-        try {
-            FloodgateApi api = FloodgateApi.getInstance();
-            if (api == null) {
-                TpaGui.getInstance().getLogger().warning(
-                    TpaGui.getInstance().getLogMessage("floodgate-api-unavailable")
-                );
+        formBuilder.responseHandler((form, response) -> {
+            if (response == null) {
+                plugin.getLogger().info(plugin.getLogMessage("form-closed", "{player}", player.getName()));
                 return;
             }
-            
-            FloodgatePlayer floodgatePlayer = api.getPlayer(player.getUniqueId());
-            if (floodgatePlayer != null) {
-                floodgatePlayer.sendForm(form);
-            } else {
-                TpaGui.getInstance().getLogger().warning(
-                    TpaGui.getInstance().getLogMessage("floodgate-player-unavailable",
-                        "{player}", player.getName())
-                );
+
+            try {
+                int buttonId = Integer.parseInt(response.trim());
+                int playerCountOnPage = end - start;
+
+                if (buttonId < playerCountOnPage) {
+                    // 点击了玩家按钮
+                    Player target = availablePlayers.get(start + buttonId);
+                    openActionSelectForm(player, target);
+                } else {
+                    // 点击了导航按钮
+                    int navId = buttonId - playerCountOnPage;
+                    if (page > 0 && navId == 0) {
+                        // 上一页
+                        openTpaForm(player, page - 1);
+                    } else {
+                        // 下一页
+                        openTpaForm(player, page + 1);
+                    }
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning(plugin.getLogMessage("form-response-error", "{error}", e.getMessage()));
+            }
+        });
+
+        sendForm(player, formBuilder.build());
+    }
+
+    private static void openActionSelectForm(Player player, Player target) {
+        TpaGui plugin = TpaGui.getInstance();
+        SimpleForm form = SimpleForm.builder()
+            .title(plugin.getMessage("form.player-select") + ": " + target.getName())
+            .button(plugin.getConfig().getString("commands.tpa.to-player", "tpa") + " " + target.getName())
+            .button(plugin.getConfig().getString("commands.tpa.here", "tpahere") + " " + target.getName())
+            .responseHandler((form1, response) -> {
+                if (response == null) return;
+                
+                int id = Integer.parseInt(response.trim());
+                String cmdName = (id == 0) ? 
+                    plugin.getConfig().getString("commands.tpa.to-player", "tpa") : 
+                    plugin.getConfig().getString("commands.tpa.here", "tpahere");
+                
+                String fullCommand = "/" + cmdName + " " + target.getName();
+                
+                runTask(player, () -> {
+                    player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
+                    try {
+                        player.chat(fullCommand);
+                    } finally {
+                        player.removeMetadata("TPAGUI_COMMAND", plugin);
+                    }
+                });
+            })
+            .build();
+        
+        sendForm(player, form);
+    }
+
+    private static void sendForm(Player player, Object form) {
+        try {
+            FloodgateApi api = FloodgateApi.getInstance();
+            if (api == null) return;
+            FloodgatePlayer fp = api.getPlayer(player.getUniqueId());
+            if (fp != null) {
+                if (form instanceof SimpleForm) {
+                    fp.sendForm((SimpleForm) form);
+                } else if (form instanceof CustomForm) {
+                    fp.sendForm((CustomForm) form);
+                }
             }
         } catch (Exception e) {
-            TpaGui.getInstance().getLogger().severe(
-                TpaGui.getInstance().getLogMessage("floodgate-send-form-error",
-                    "{error}", e.getMessage())
-            );
             e.printStackTrace();
         }
     }

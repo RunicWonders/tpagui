@@ -15,10 +15,12 @@ import java.util.ArrayList;
 
 public class GuiManager {
     private static final int ROWS = 6;
-    private static final int SLOTS_PER_PAGE = 45; // 前5行用于显示玩家头颅
     
     public static Inventory createTpaMenu(Player player, int page) {
         TpaGui plugin = TpaGui.getInstance();
+        int playersPerPage = plugin.getConfig().getInt("java-dialog-gui.players-per-page", 45);
+        if (playersPerPage > 45) playersPerPage = 45; // 最多 5 行
+
         Inventory inv = Bukkit.createInventory(null, ROWS * 9, 
             plugin.getMessage("gui.title", "{page}", String.valueOf(page + 1)));
         
@@ -32,12 +34,12 @@ public class GuiManager {
         
         // 计算总页数
         int totalPlayers = availablePlayers.size();
-        int totalPages = totalPlayers > 0 ? ((totalPlayers - 1) / SLOTS_PER_PAGE + 1) : 1;
+        int totalPages = totalPlayers > 0 ? ((totalPlayers - 1) / playersPerPage + 1) : 1;
         
         // 添加玩家头颅
-        int startIndex = page * SLOTS_PER_PAGE;
+        int startIndex = page * playersPerPage;
         int slotIndex = 0;
-        for (int i = startIndex; i < availablePlayers.size() && slotIndex < SLOTS_PER_PAGE; i++) {
+        for (int i = startIndex; i < availablePlayers.size() && slotIndex < playersPerPage; i++) {
             Player target = availablePlayers.get(i);
             // 再次验证玩家是否在线（可能在获取列表后离线）
             if (target != null && target.isOnline()) {
@@ -51,8 +53,6 @@ public class GuiManager {
         }
         
         // 在底部（第6行）添加翻页按钮
-        // 槽位45是第6行第1个位置（上一页按钮）
-        // 槽位53是第6行第9个位置（下一页按钮）
         if (page > 0) {
             inv.setItem(45, createNavigationItem(Material.ARROW, 
                 plugin.getMessage("gui.navigation.previous-page")));

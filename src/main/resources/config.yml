@@ -63,6 +63,8 @@ messages:
     proxy-detected: "检测到代理环境 (Velocity/BungeeCord)，TpaGui 将在子服中自动禁用以避免冲突"
     velocity-enabled: "TpaGui Velocity 版本已启用，正在管理代理连接的玩家"
     velocity-environment: "已检测到 Velocity 环境，所有连接的玩家将由该代理实例管理"
+    dialog-supported: "已检测到 1.21.6+ 环境，已启用原生 /dialog GUI 支持"
+    dialog-sent: "已向 {player} 发送 /dialog 请求: {dialog}"
 
 # 更新检查配置
 update-check:
@@ -70,6 +72,17 @@ update-check:
   enabled: true
   # 检查间隔（分钟），0表示仅在启动时检查
   interval: 0
+
+# Java 版 1.21.6+ 原生 GUI 配置
+java-dialog-gui:
+  # 是否对 1.21.6+ 版本启用 /dialog 原生 GUI 功能
+  enabled: true
+  # 玩家列表每页显示数量
+  players-per-page: 20
+  # 是否显示玩家头像 (需要支持的网络环境获取头像)
+  show-avatars: true
+  # 头像 API 地址，可以使用 {uuid} 或 {name} 占位符
+  avatar-api: "https://mc-heads.net/avatar/{uuid}/64"
 
 # 命令配置
 commands:

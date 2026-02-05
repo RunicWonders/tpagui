@@ -9,6 +9,7 @@ public class TpaGui extends JavaPlugin {
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
     private boolean isFolia = false;
+    private boolean isDialogSupported = false;
     private UpdateChecker updateChecker;
     
     @Override
@@ -37,6 +38,14 @@ public class TpaGui extends JavaPlugin {
         
         if (isFolia) {
             getLogger().info(getLogMessage("folia-detected"));
+        }
+
+        // 检查 1.21.6+ /dialog 支持
+        // 25w02a 对应的版本是 1.21.6
+        String version = getServer().getBukkitVersion();
+        if (version.contains("1.21.6") || version.contains("1.21.7") || version.contains("1.22")) {
+            isDialogSupported = true;
+            getLogger().info(getLogMessage("dialog-supported"));
         }
         
         // 检查Floodgate
@@ -73,6 +82,10 @@ public class TpaGui extends JavaPlugin {
     
     public boolean isFolia() {
         return isFolia;
+    }
+
+    public boolean isDialogSupported() {
+        return isDialogSupported;
     }
     
     /**

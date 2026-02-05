@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
     id = "tpagui",
     name = "TpaGui",
-    version = "1.2.0-beta.2",
+    version = "1.2.0-beta.3",
     description = "A simple TPA GUI plugin for Velocity",
     authors = {"lemwood"}
 )
@@ -58,7 +58,7 @@ public class VelocityTpaGui {
         
         // 初始化更新检查器
         updateChecker = new UpdateChecker(
-            "1.2.0-beta.1",
+            "1.2.0-beta.3",
             msg -> logger.warn(msg),
             key -> getLogMessage(key),
             () -> config.node("update-check", "enabled").getBoolean(true)
