@@ -73,12 +73,14 @@ public class VelocityFormManager {
                 openActionSelectForm(plugin, player, target);
             } else {
                 // 点击了分页按钮
-                int navId = buttonId - playerCount;
-                if (currentPage > 1 && navId == 0) {
+                int navIndex = buttonId - playerCount;
+                boolean hasPrev = currentPage > 1;
+                
+                if (hasPrev && navIndex == 0) {
                     // 上一页
                     openTpaForm(plugin, player, currentPage - 1);
                 } else {
-                    // 下一页 (可能是 navId 0 或 1)
+                    // 下一页
                     openTpaForm(plugin, player, currentPage + 1);
                 }
             }

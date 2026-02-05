@@ -107,7 +107,8 @@ public class MenuListener implements Listener {
             // 执行命令
             player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
             try {
-                player.chat(command);
+                // 使用 dispatchCommand 替代 player.chat 避免某些插件对 chat 事件的干扰或限制
+                TpaGui.getInstance().getServer().dispatchCommand(player, command.substring(1));
             } finally {
                 player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
             }

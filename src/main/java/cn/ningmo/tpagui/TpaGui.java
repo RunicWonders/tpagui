@@ -143,12 +143,16 @@ public class TpaGui extends JavaPlugin {
     }
     
     public String getMessage(String path) {
-        String message = getConfig().getString("messages." + path, path);
+        String message = getConfig().getString("messages." + path);
+        if (message == null) {
+            return path;
+        }
         return ChatColor.translateAlternateColorCodes('&', message);
     }
     
     public String getMessage(String path, String... placeholders) {
         String message = getMessage(path);
+        if (message.equals(path)) return path;
         for (int i = 0; i < placeholders.length; i += 2) {
             if (i + 1 < placeholders.length) {
                 message = message.replace(placeholders[i], placeholders[i + 1]);
@@ -164,7 +168,13 @@ public class TpaGui extends JavaPlugin {
      * @return 日志消息
      */
     public String getLogMessage(String path, String... placeholders) {
-        String message = getConfig().getString("messages.log." + path, path);
+        String message = getConfig().getString("messages.log." + path);
+        if (message == null) {
+            message = getConfig().getString("messages." + path);
+        }
+        if (message == null) {
+            return path;
+        }
         for (int i = 0; i < placeholders.length; i += 2) {
             if (i + 1 < placeholders.length) {
                 message = message.replace(placeholders[i], placeholders[i + 1]);

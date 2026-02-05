@@ -91,8 +91,10 @@ public class BedrockFormManager {
                     openActionSelectForm(player, target);
                 } else {
                     // 点击了导航按钮
-                    int navId = buttonId - playerCountOnPage;
-                    if (page > 0 && navId == 0) {
+                    int navIndex = buttonId - playerCountOnPage;
+                    boolean hasPrev = page > 0;
+                    
+                    if (hasPrev && navIndex == 0) {
                         // 上一页
                         openTpaForm(player, page - 1);
                     } else {
