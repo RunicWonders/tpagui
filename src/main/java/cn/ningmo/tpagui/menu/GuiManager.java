@@ -6,6 +6,7 @@ import cn.ningmo.tpagui.data.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -114,8 +115,11 @@ public class GuiManager {
         meta.setDisplayName(plugin.getMessage("gui.skull.name", "{player}", player.getName()));
         
         List<String> lore = new ArrayList<>();
-        for (String line : plugin.getConfig().getStringList("messages.gui.skull.lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', line));
+        FileConfiguration langConfig = plugin.getLanguageManager().getLanguageConfig(plugin.getLanguageManager().getLanguage());
+        if (langConfig != null) {
+            for (String line : langConfig.getStringList("gui.skull.lore")) {
+                lore.add(ChatColor.translateAlternateColorCodes('&', line));
+            }
         }
         meta.setLore(lore);
         
@@ -137,9 +141,12 @@ public class GuiManager {
         meta.setDisplayName(plugin.getMessage("gui.skull.name", "{player}", gp.getName()));
         
         List<String> lore = new ArrayList<>();
-        for (String line : plugin.getConfig().getStringList("messages.gui.skull.lore")) {
-            String processedLine = line.replace("{server}", gp.getServer());
-            lore.add(ChatColor.translateAlternateColorCodes('&', processedLine));
+        FileConfiguration langConfig = plugin.getLanguageManager().getLanguageConfig(plugin.getLanguageManager().getLanguage());
+        if (langConfig != null) {
+            for (String line : langConfig.getStringList("gui.skull.lore")) {
+                String processedLine = line.replace("{server}", gp.getServer());
+                lore.add(ChatColor.translateAlternateColorCodes('&', processedLine));
+            }
         }
         meta.setLore(lore);
         

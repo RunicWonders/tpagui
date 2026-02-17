@@ -11,6 +11,7 @@ public class TpaGui extends JavaPlugin {
     private boolean isFolia = false;
     private boolean isDialogSupported = false;
     private UpdateChecker updateChecker;
+    private LanguageManager languageManager;
     
     @Override
     public void onEnable() {
@@ -24,6 +25,9 @@ public class TpaGui extends JavaPlugin {
         } catch (Exception e) {
             getLogger().severe("无法释放或加载配置文件: " + e.getMessage());
         }
+        
+        // 2. 初始化语言管理器
+        languageManager = new LanguageManager(this);
         
         // 2. 检查是否在代理环境下（BungeeCord/Velocity 子服）
         boolean isProxy = false;
@@ -173,23 +177,16 @@ public class TpaGui extends JavaPlugin {
         return floodgateEnabled;
     }
     
+    public LanguageManager getLanguageManager() {
+        return languageManager;
+    }
+    
     public String getMessage(String path) {
-        String message = getConfig().getString("messages." + path);
-        if (message == null) {
-            return path;
-        }
-        return ChatColor.translateAlternateColorCodes('&', message);
+        return languageManager.getMessage(path);
     }
     
     public String getMessage(String path, String... placeholders) {
-        String message = getMessage(path);
-        if (message.equals(path)) return path;
-        for (int i = 0; i < placeholders.length; i += 2) {
-            if (i + 1 < placeholders.length) {
-                message = message.replace(placeholders[i], placeholders[i + 1]);
-            }
-        }
-        return message;
+        return languageManager.getMessage(path, placeholders);
     }
     
     /**
@@ -199,18 +196,6 @@ public class TpaGui extends JavaPlugin {
      * @return 日志消息
      */
     public String getLogMessage(String path, String... placeholders) {
-        String message = getConfig().getString("messages.log." + path);
-        if (message == null) {
-            message = getConfig().getString("messages." + path);
-        }
-        if (message == null) {
-            return path;
-        }
-        for (int i = 0; i < placeholders.length; i += 2) {
-            if (i + 1 < placeholders.length) {
-                message = message.replace(placeholders[i], placeholders[i + 1]);
-            }
-        }
-        return message;
+        return languageManager.getLogMessage(path, placeholders);
     }
 } 
