@@ -20,6 +20,10 @@ form:
   title: "Teleport Request Menu"
   player-select: "Select Player"
   tpahere-toggle: "Request player to teleport to me"
+  action:
+    tpa: "Teleport to them"
+    tpahere: "Bring them here"
+    back: "Back"
   request:
     title: "Teleport Request"
     content-to: "§e{player} §fwants to teleport to your location"
@@ -65,3 +69,5 @@ log:
   dialog-supported: "1.21.6+ environment detected, native /dialog GUI support enabled"
   dialog-sent: "Sent /dialog request to {player}: {dialog}"
   velocity-mode-enabled: "Velocity cross-server sync mode enabled"
+  proxy-mode-local: "Currently in proxy subserver environment, but cross-server mode is disabled (velocity.enabled: false). Plugin will run in local mode."
+  velocity-registering-channels: "No proxy environment detected, but velocity.enabled is true, registering message channels..."

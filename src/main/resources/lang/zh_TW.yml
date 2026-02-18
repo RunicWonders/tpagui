@@ -20,6 +20,10 @@ form:
   title: "傳送請求選單"
   player-select: "選擇玩家"
   tpahere-toggle: "請求玩家傳送到我"
+  action:
+    tpa: "傳送到他"
+    tpahere: "拉他過來"
+    back: "返回"
   request:
     title: "傳送請求"
     content-to: "§e{player} §f想要傳送到你的位置"
@@ -65,3 +69,5 @@ log:
   dialog-supported: "已偵測到 1.21.6+ 環境，已啟用原生 /dialog GUI 支援"
   dialog-sent: "已向 {player} 發送 /dialog 請求: {dialog}"
   velocity-mode-enabled: "已啟用 Velocity 跨服同步模式"
+  proxy-mode-local: "當前處於代理子服環境，但未開啟跨服模式 (velocity.enabled: false)。插件將以本地模式運行。"
+  velocity-registering-channels: "未偵測到代理環境，但 velocity.enabled 為 true，正在註冊訊息通道..."

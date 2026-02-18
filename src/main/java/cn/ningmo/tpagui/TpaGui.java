@@ -50,14 +50,13 @@ public class TpaGui extends JavaPlugin {
             } else {
                 // 不再自动禁用插件，仅输出环境提示
                 getLogger().info(getLogMessage("proxy-detected"));
-                getLogger().info("当前处于代理子服环境，但未开启跨服模式 (velocity.enabled: false)。");
-                getLogger().info("插件将以本地模式运行。");
+                getLogger().info(getLogMessage("proxy-mode-local"));
             }
         } else {
             // 非代理环境下，如果开启了 velocity.enabled，也需要注册通道
             // 某些环境下 isProxy 检测可能不准确
             if (getConfig().getBoolean("velocity.enabled", false)) {
-                getLogger().info("未检测到代理环境，但 velocity.enabled 为 true，正在注册消息通道...");
+                getLogger().info(getLogMessage("velocity-registering-channels"));
                 getServer().getMessenger().registerOutgoingPluginChannel(this, "tpagui:main");
                 getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", new cn.ningmo.tpagui.messaging.PluginMessageHandler());
             }

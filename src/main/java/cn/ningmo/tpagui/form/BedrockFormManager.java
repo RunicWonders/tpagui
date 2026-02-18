@@ -138,26 +138,41 @@ public class BedrockFormManager {
         TpaGui plugin = TpaGui.getInstance();
         SimpleForm form = SimpleForm.builder()
             .title(plugin.getMessage("form.player-select") + ": " + target.name)
-            .button(plugin.getConfig().getString("commands.tpa.to-player", "tpa") + " " + target.name)
-            .button(plugin.getConfig().getString("commands.tpa.here", "tpahere") + " " + target.name)
+            .button(plugin.getMessage("form.action.tpa"), FormImage.Type.PATH, "textures/ui/multiplayer_glyph_color")
+            .button(plugin.getMessage("form.action.tpahere"), FormImage.Type.PATH, "textures/ui/world_glyph_color")
+            .button(plugin.getMessage("form.action.back"), FormImage.Type.PATH, "textures/ui/cancel")
             .responseHandler((form1, response) -> {
                 if (response == null) return;
                 
                 int id = Integer.parseInt(response.trim());
-                String cmdName = (id == 0) ? 
-                    plugin.getConfig().getString("commands.tpa.to-player", "tpa") : 
-                    plugin.getConfig().getString("commands.tpa.here", "tpahere");
-                
-                String fullCommand = "/" + cmdName + " " + target.name;
-                
-                runTask(player, () -> {
-                    player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
-                    try {
-                        player.chat(fullCommand);
-                    } finally {
-                        player.removeMetadata("TPAGUI_COMMAND", plugin);
-                    }
-                });
+                if (id == 0) {
+                    // TPA: 传送到目标玩家
+                    String cmdName = plugin.getConfig().getString("commands.tpa.to-player", "tpa");
+                    String fullCommand = "/" + cmdName + " " + target.name;
+                    runTask(player, () -> {
+                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
+                        try {
+                            player.chat(fullCommand);
+                        } finally {
+                            player.removeMetadata("TPAGUI_COMMAND", plugin);
+                        }
+                    });
+                } else if (id == 1) {
+                    // TPAHERE: 请求目标玩家传送到自己
+                    String cmdName = plugin.getConfig().getString("commands.tpa.here", "tpahere");
+                    String fullCommand = "/" + cmdName + " " + target.name;
+                    runTask(player, () -> {
+                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
+                        try {
+                            player.chat(fullCommand);
+                        } finally {
+                            player.removeMetadata("TPAGUI_COMMAND", plugin);
+                        }
+                    });
+                } else if (id == 2) {
+                    // 返回主菜单
+                    openTpaForm(player, 0);
+                }
             })
             .build();
         
