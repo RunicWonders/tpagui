@@ -32,14 +32,16 @@ public class GuiManager {
         if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
             // Velocity 模式：获取全局玩家
             for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
-                if (!gp.getUuid().equals(player.getUniqueId())) {
-                    availablePlayers.add(gp);
-                }
+                if (gp.getUuid().equals(player.getUniqueId())) continue;
+                // 同服隐身玩家（SuperVanish 等）对无权限玩家隐藏
+                Player localPlayer = Bukkit.getPlayer(gp.getUuid());
+                if (localPlayer != null && !player.canSee(localPlayer)) continue;
+                availablePlayers.add(gp);
             }
         } else {
-            // 普通模式：获取在线玩家
+            // 普通模式：获取在线玩家（隐藏隐身玩家）
             for (Player p : Bukkit.getOnlinePlayers()) {
-                if (!p.getUniqueId().equals(player.getUniqueId())) {
+                if (!p.getUniqueId().equals(player.getUniqueId()) && player.canSee(p)) {
                     availablePlayers.add(p);
                 }
             }

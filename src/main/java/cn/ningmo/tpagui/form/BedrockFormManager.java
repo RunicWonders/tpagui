@@ -47,14 +47,16 @@ public class BedrockFormManager {
         if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
             // Velocity 模式：获取全局玩家
             for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
-                if (!gp.getUuid().equals(player.getUniqueId())) {
-                    availablePlayers.add(new TargetInfo(gp.getName(), gp.getUuid(), gp.getServer()));
-                }
+                if (gp.getUuid().equals(player.getUniqueId())) continue;
+                // 同服隐身玩家（SuperVanish 等）对无权限玩家隐藏
+                Player localPlayer = Bukkit.getPlayer(gp.getUuid());
+                if (localPlayer != null && !player.canSee(localPlayer)) continue;
+                availablePlayers.add(new TargetInfo(gp.getName(), gp.getUuid(), gp.getServer()));
             }
         } else {
-            // 普通模式：获取本地在线玩家
+            // 普通模式：获取本地在线玩家（隐藏隐身玩家）
             for (Player p : Bukkit.getOnlinePlayers()) {
-                if (p != player) {
+                if (p != player && player.canSee(p)) {
                     availablePlayers.add(new TargetInfo(p.getName(), p.getUniqueId(), "local"));
                 }
             }
