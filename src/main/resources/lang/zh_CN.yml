@@ -46,6 +46,7 @@ log:
   gui-command-executed: "{player} 通过GUI执行命令: {command}"
   form-closed: "{player} 关闭了传送请求菜单"
   form-response-error: "处理表单响应时出错: {error}"
+  playerlist-parse-error: "解析 PlayerList 插件消息失败: {error}"
   floodgate-api-unavailable: "FloodgateApi不可用"
   floodgate-player-unavailable: "无法获取玩家 {player} 的FloodgatePlayer实例"
   floodgate-send-form-error: "发送表单时出错: {error}"

@@ -42,7 +42,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                 // 玩家列表更新后，刷新等待中的 TPA 菜单（修复首次打开空列表）
                 refreshPendingMenus();
             } catch (Exception e) {
-                plugin.getLogger().warning("解析 PlayerList 插件消息失败: " + e.getMessage());
+                plugin.getLogger().warning(plugin.getLogMessage("playerlist-parse-error", "{error}", e.getMessage()));
             }
         } else if (subChannel.equals("ShowRequest")) {
             String targetName = in.readUTF();

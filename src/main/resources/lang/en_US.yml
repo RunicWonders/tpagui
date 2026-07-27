@@ -46,6 +46,7 @@ log:
   gui-command-executed: "{player} executed command via GUI: {command}"
   form-closed: "{player} closed teleport request menu"
   form-response-error: "Error processing form response: {error}"
+  playerlist-parse-error: "Failed to parse PlayerList plugin message: {error}"
   floodgate-api-unavailable: "FloodgateApi unavailable"
   floodgate-player-unavailable: "Unable to get FloodgatePlayer instance for player {player}"
   floodgate-send-form-error: "Error sending form: {error}"
