@@ -100,7 +100,8 @@ public class BedrockFormManager {
         }
 
         formBuilder.responseHandler((form, response) -> {
-            if (response == null) {
+            if (isClosedResponse(response)) {
+                // 玩家点击右上角 X 关闭表单，视为取消，静默处理
                 plugin.getLogger().info(plugin.getLogMessage("form-closed", "{player}", player.getName()));
                 return;
             }
@@ -142,9 +143,15 @@ public class BedrockFormManager {
             .button(plugin.getMessage("form.action.tpahere"), FormImage.Type.PATH, "textures/ui/world_glyph_color")
             .button(plugin.getMessage("form.action.back"), FormImage.Type.PATH, "textures/ui/cancel")
             .responseHandler((form1, response) -> {
-                if (response == null) return;
-                
-                int id = Integer.parseInt(response.trim());
+                if (isClosedResponse(response)) return;
+
+                int id;
+                try {
+                    id = Integer.parseInt(response.trim());
+                } catch (NumberFormatException e) {
+                    // 无法解析的响应视为关闭表单，静默处理
+                    return;
+                }
                 if (id == 0) {
                     // TPA: 传送到目标玩家
                     String cmdName = plugin.getConfig().getString("commands.tpa.to-player", "tpa");
@@ -225,6 +232,17 @@ public class BedrockFormManager {
     }
 
     /**
+     * 判断表单响应是否为"关闭表单"
+     * Geyser 在玩家关闭表单时回传的原始数据为 null、空串或字符串 "null"，
+     * 统一视为取消操作，不应作为错误处理
+     * @param response 表单原始响应数据
+     * @return 是否为关闭表单
+     */
+    private static boolean isClosedResponse(String response) {
+        return response == null || response.trim().isEmpty() || response.trim().equalsIgnoreCase("null");
+    }
+
+    /**
      * 在玩家所在线程执行任务（兼容Folia）
      * @param player 玩家
      * @param runnable 任务
@@ -264,7 +282,7 @@ public class BedrockFormManager {
                 .button(TpaGui.getInstance().getMessage("form.request.accept"))
                 .button(TpaGui.getInstance().getMessage("form.request.deny"))
                 .responseHandler((form1, response) -> {
-                    if (response == null || response.trim().isEmpty()) {
+                    if (isClosedResponse(response)) {
                         // 玩家关闭表单，记录到控制台并发送消息
                         TpaGui.getInstance().getLogger().info(
                             TpaGui.getInstance().getLogMessage("request-form-closed",
