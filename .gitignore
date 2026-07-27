@@ -5,3 +5,5 @@ target
 tpagui.iml
 maven
 *.zip
+# 本地项目记忆，不入库
+AGENTS.md
