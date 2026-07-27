@@ -5,7 +5,8 @@ language: "zh_CN"
 # Velocity 跨服同步配置
 velocity:
   # 是否启用 Velocity 跨服模式
-  # 启用后，子服将不再自动禁用，而是从 Velocity 获取全服玩家列表
+  # 启用后，插件将通过 Velocity 代理获取全服玩家列表并支持跨服传送请求；
+  # 未启用时，即使处于代理子服环境，插件也会以本地模式运行（仅显示本服玩家）
   enabled: false
   # 当前服务器在 Velocity 中的名称 (需与 velocity 配置文件中的名称一致)
   server-name: "subserver1"
@@ -24,13 +25,28 @@ update-check:
 # Java 版 1.21.6+ 原生 GUI 配置
 java-dialog-gui:
   # 是否对 1.21.6+ 版本启用 /dialog 原生 GUI 功能
+  # 注意: Dialog 功能依赖外部数据包提供 tpagui:request_to / tpagui:request_here 两个对话框定义；
+  # 未安装数据包时将自动降级为聊天消息提示
   enabled: true
   # 玩家列表每页显示数量
+  # 该设置同时作用于基岩版表单和跨服玩家列表；Java Inventory GUI 受箱子界面限制，上限为 45
   players-per-page: 20
   # 是否显示玩家头像 (需要支持的网络环境获取头像)
+  # 该设置同时作用于基岩版表单和跨服玩家列表
   show-avatars: true
   # 头像 API 地址，可以使用 {uuid} 或 {name} 占位符
   avatar-api: "https://mc-heads.net/avatar/{uuid}/64"
+
+# 返回按钮配置 (Java 版 GUI 与基岩版表单通用)
+back-button:
+  # 是否在玩家选择菜单中显示返回按钮
+  enabled: false
+  # Java 版 GUI 按钮材质 (Bukkit Material 名称，如 BARRIER、ARROW、OAK_DOOR)
+  material: "BARRIER"
+  # Java 版点击后执行的命令 (带不带斜杠均可)，例如执行 /cd 返回主菜单
+  java-command: "cd"
+  # 基岩版点击后执行的命令
+  bedrock-command: "gmenu"
 
 # 命令配置
 commands:

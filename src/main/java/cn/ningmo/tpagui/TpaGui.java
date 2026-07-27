@@ -29,7 +29,7 @@ public class TpaGui extends JavaPlugin {
         // 2. 初始化语言管理器
         languageManager = new LanguageManager(this);
         
-        // 2. 检查是否在代理环境下（BungeeCord/Velocity 子服）
+        // 3. 检查是否在代理环境下（BungeeCord/Velocity 子服）
         boolean isProxy = false;
         try {
             // 检查 Spigot 的 BungeeCord 设置
@@ -40,13 +40,16 @@ public class TpaGui extends JavaPlugin {
                       getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
         }
         
+        // 插件消息处理器只实例化一次，两个分支共用
+        cn.ningmo.tpagui.messaging.PluginMessageHandler messageHandler = new cn.ningmo.tpagui.messaging.PluginMessageHandler();
+        
         if (isProxy) {
             // 如果在代理环境下，检查是否开启了 Velocity 跨服模式
             if (getConfig().getBoolean("velocity.enabled", false)) {
                 getLogger().info(getLogMessage("velocity-mode-enabled"));
                 // 注册插件消息通道
                 getServer().getMessenger().registerOutgoingPluginChannel(this, "tpagui:main");
-                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", new cn.ningmo.tpagui.messaging.PluginMessageHandler());
+                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", messageHandler);
             } else {
                 // 不再自动禁用插件，仅输出环境提示
                 getLogger().info(getLogMessage("proxy-detected"));
@@ -58,7 +61,7 @@ public class TpaGui extends JavaPlugin {
             if (getConfig().getBoolean("velocity.enabled", false)) {
                 getLogger().info(getLogMessage("velocity-registering-channels"));
                 getServer().getMessenger().registerOutgoingPluginChannel(this, "tpagui:main");
-                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", new cn.ningmo.tpagui.messaging.PluginMessageHandler());
+                getServer().getMessenger().registerIncomingPluginChannel(this, "tpagui:main", messageHandler);
             }
         }
 
@@ -75,9 +78,9 @@ public class TpaGui extends JavaPlugin {
         }
 
         // 检查 1.21.6+ /dialog 支持
-        // 25w02a 对应的版本是 1.21.6
+        // 25w02a 对应的版本是 1.21.6，数值比较以覆盖 1.21.8+ 及更高版本
         String version = getServer().getBukkitVersion();
-        if (version.contains("1.21.6") || version.contains("1.21.7") || version.contains("1.22")) {
+        if (isVersionAtLeast(version, 1, 21, 6)) {
             isDialogSupported = true;
             getLogger().info(getLogMessage("dialog-supported"));
         }
@@ -103,14 +106,53 @@ public class TpaGui extends JavaPlugin {
         updateChecker = new UpdateChecker(this);
         
         // 检查更新（延迟5秒，避免影响启动速度）
+        // update-check.interval > 0 时按该分钟数周期异步检查，0 表示仅在启动时检查
+        long updateIntervalMinutes = getConfig().getLong("update-check.interval", 0);
         if (isFolia) {
             getServer().getAsyncScheduler().runDelayed(this, (task) -> {
                 checkForUpdates();
             }, 5, java.util.concurrent.TimeUnit.SECONDS);
+            if (updateIntervalMinutes > 0) {
+                getServer().getAsyncScheduler().runAtFixedRate(this, (task) -> {
+                    checkForUpdates();
+                }, updateIntervalMinutes, updateIntervalMinutes, java.util.concurrent.TimeUnit.MINUTES);
+            }
         } else {
             getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
                 checkForUpdates();
             }, 100L); // 5秒 = 100 ticks
+            if (updateIntervalMinutes > 0) {
+                long intervalTicks = updateIntervalMinutes * 60 * 20L;
+                getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+                    checkForUpdates();
+                }, intervalTicks, intervalTicks);
+            }
+        }
+    }
+    
+    @Override
+    public void onDisable() {
+        // 注销插件消息通道
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+        getServer().getMessenger().unregisterIncomingPluginChannel(this);
+        // PlayerManager 暂无 clear 方法，其静态状态随插件卸载自然失效，此处无需清理
+    }
+    
+    /**
+     * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT"）
+     * @return 是否不低于 reqMajor.reqMinor.reqPatch
+     */
+    private boolean isVersionAtLeast(String bukkitVersion, int reqMajor, int reqMinor, int reqPatch) {
+        try {
+            String[] parts = bukkitVersion.split("-")[0].split("\\.");
+            int major = parts.length > 0 ? Integer.parseInt(parts[0]) : 0;
+            int minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+            int patch = parts.length > 2 ? Integer.parseInt(parts[2].replaceAll("\\D.*$", "")) : 0;
+            return major > reqMajor
+                || (major == reqMajor && minor > reqMinor)
+                || (major == reqMajor && minor == reqMinor && patch >= reqPatch);
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
     

@@ -1,4 +1,3 @@
-prefix: "&7[&bTpaGui&7] "
 console-list-header: "&a當前在線玩家列表:"
 console-list-format: "&7- &f{player}"
 player-offline: "&c該玩家已離線！"
@@ -11,15 +10,19 @@ gui:
     lore:
       - "&e左鍵: 傳送到該玩家"
       - "&e右鍵: 請求該玩家傳送到你"
+    lore-global:
+      - "&e左鍵: 傳送到該玩家"
+      - "&e右鍵: 請求該玩家傳送到你"
+      - "&7伺服器: {server}"
   navigation:
     previous-page: "&a上一頁"
     next-page: "&a下一頁"
+    back: "&c返回"
   error:
     extract-page-failed: "無法從標題中提取頁碼: {title}"
 form:
   title: "傳送請求選單"
   player-select: "選擇玩家"
-  tpahere-toggle: "請求玩家傳送到我"
   action:
     tpa: "傳送到他"
     tpahere: "拉他過來"
@@ -33,6 +36,9 @@ form:
     accepted: "&a你接受了 &e{player} &a的傳送請求"
     denied: "&c你拒絕了 &e{player} &c的傳送請求"
     closed: "&7你關閉了來自 &e{player} &7的傳送請求"
+messages:
+  tpa-request-notify: "&e{player} &7想傳送到你身邊，輸入 &e/tpaccept &7接受"
+  tpahere-request-notify: "&e{player} &7想讓你傳送到他身邊，輸入 &e/tpaccept &7接受"
 update-available: "&7[&bTpaGui&7] &a發現新版本! &7當前: &e{current} &7最新: &e{latest} &7| &bModrinth/GitHub"
 update-latest: "&7[&bTpaGui&7] &a你正在使用最新版本: &e{version}"
 log:
@@ -46,8 +52,6 @@ log:
   floodgate-check-error: "檢查Floodgate玩家時出錯: {error}"
   floodgate-request-error: "處理Floodgate請求時出錯: {error}"
   send-request-form: "傳送傳送請求表單給 {target} 從 {requester} 類型: {type}"
-  preparing-send-form: "準備傳送表單給 {player}"
-  form-content: "表單內容: {title} | {content}"
   request-form-closed: "{player} 關閉了來自 {requester} 的傳送請求表單"
   request-accepted: "{player} 接受了來自 {requester} 的傳送請求"
   request-denied: "{player} 拒絕了來自 {requester} 的傳送請求"
@@ -63,7 +67,7 @@ log:
   update-available: "發現新版本! 當前版本: {current}, 最新版本: {latest} | 請前往 Modrinth 或 GitHub 下載"
   update-latest: "你正在使用最新版本: {version}"
   folia-detected: "已偵測到 Folia 環境，已啟用區域排程器支援"
-  proxy-detected: "偵測到代理環境 (Velocity/BungeeCord)，TpaGui 將在子服中自動停用以避免衝突"
+  proxy-detected: "偵測到代理環境 (Velocity/BungeeCord)，插件將以本地模式繼續運行"
   velocity-enabled: "TpaGui Velocity 版本已啟用，正在管理代理連線的玩家"
   velocity-environment: "已偵測到 Velocity 環境，所有連線的玩家將由該代理實例管理"
   dialog-supported: "已偵測到 1.21.6+ 環境，已啟用原生 /dialog GUI 支援"

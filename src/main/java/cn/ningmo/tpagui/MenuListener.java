@@ -6,30 +6,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import cn.ningmo.tpagui.menu.GuiManager;
-import org.bukkit.metadata.FixedMetadataValue;
+import cn.ningmo.tpagui.menu.TpaMenuHolder;
 
 public class MenuListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // 只处理GUI库存的点击，忽略玩家自己的库存点击
-        // 检查点击的库存是否为顶部库存（GUI）
-        if (event.getClickedInventory() == null || 
-            !event.getClickedInventory().equals(event.getView().getTopInventory())) {
+        // 通过自定义 InventoryHolder 识别 TPA GUI，忽略其他界面
+        Inventory topInventory = event.getView().getTopInventory();
+        if (!(topInventory.getHolder() instanceof TpaMenuHolder)) {
             return;
         }
-        
-        String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
-        int pagePlaceholderIndex = titleTemplate.indexOf("{page}");
-        if (pagePlaceholderIndex == -1) {
-            return;
-        }
-        String titlePrefix = titleTemplate.substring(0, pagePlaceholderIndex);
 
-        if (!event.getView().getTitle().startsWith(titlePrefix)) {
+        // 只处理GUI库存的点击，忽略玩家自己的库存点击
+        if (event.getClickedInventory() == null || 
+            !event.getClickedInventory().equals(topInventory)) {
             return;
         }
         
@@ -45,14 +41,8 @@ public class MenuListener implements Listener {
             return;
         }
 
-        String title = event.getView().getTitle();
-        int currentPage = extractPageFromTitle(title);
-        if (currentPage <= 0) {
-            return;
-        }
-
-        // 将从标题中提取的页码（从1开始）转换为从0开始的页码
-        int pageIndex = currentPage - 1;
+        // 页码直接从 holder 中读取（从 0 开始）
+        int pageIndex = ((TpaMenuHolder) topInventory.getHolder()).getPage();
 
         if (clicked.getType() == Material.ARROW) {
             ItemMeta itemMeta = clicked.getItemMeta();
@@ -71,6 +61,14 @@ public class MenuListener implements Listener {
                     player.openInventory(GuiManager.createTpaMenu(player, pageIndex - 1));
                 }
             }
+        } else if (isBackButton(clicked)) {
+            // 返回按钮：以玩家身份执行配置的命令（如 /cd 返回主菜单）
+            String command = TpaGui.getInstance().getConfig().getString("back-button.java-command", "");
+            if (command != null && !command.trim().isEmpty()) {
+                player.performCommand(command.trim().startsWith("/")
+                    ? command.trim().substring(1) : command.trim());
+            }
+            player.closeInventory();
         } else if (clicked.getType() == Material.PLAYER_HEAD) {
             ItemMeta meta = clicked.getItemMeta();
             if (meta == null || !(meta instanceof SkullMeta)) {
@@ -110,42 +108,40 @@ public class MenuListener implements Listener {
                     "{command}", "/" + command)
             );
             
-            // 执行命令
-            player.chat("/" + command);
+            // 执行命令（performCommand 替代已废弃的 player.chat）
+            player.performCommand(command);
             player.closeInventory();
         }
     }
     
     /**
-     * 从标题中提取页码
-     * @param title GUI标题
-     * @return 页码（1-based），如果无法提取则返回0
+     * 判断点击的物品是否为返回按钮（材质与显示名均需与配置匹配）
      */
-    private int extractPageFromTitle(String title) {
-        try {
-            // 获取配置中的标题模板
-            String titleTemplate = TpaGui.getInstance().getMessage("gui.title");
-            
-            // 找到占位符{page}在模板中的位置
-            int placeholderIndex = titleTemplate.indexOf("{page}");
-            if (placeholderIndex == -1) {
-                return 0;
-            }
-            
-            // 获取占位符前后的文本
-            String prefix = titleTemplate.substring(0, placeholderIndex);
-            String suffix = titleTemplate.substring(placeholderIndex + 6); // 6是"{page}"的长度
-            
-            // 从实际标题中提取页码
-            if (title.startsWith(prefix) && title.endsWith(suffix)) {
-                String pageStr = title.substring(prefix.length(), title.length() - suffix.length());
-                int page = Integer.parseInt(pageStr.trim());
-                return page > 0 ? page : 0;
-            }
-        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-            String errorMsg = TpaGui.getInstance().getMessage("gui.error.extract-page-failed", title);
-            TpaGui.getInstance().getLogger().warning(errorMsg);
+    private boolean isBackButton(ItemStack item) {
+        TpaGui plugin = TpaGui.getInstance();
+        if (!plugin.getConfig().getBoolean("back-button.enabled", false)) {
+            return false;
         }
-        return 0;
+        Material material = Material.matchMaterial(
+            plugin.getConfig().getString("back-button.material", "BARRIER"));
+        if (material == null) {
+            material = Material.BARRIER;
+        }
+        if (item.getType() != material) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.hasDisplayName()
+            && meta.getDisplayName().equals(plugin.getMessage("gui.navigation.back"));
+    }
+
+    /**
+     * 取消对 TPA GUI 的拖拽操作，防止物品被拖入菜单导致丢失
+     */
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof TpaMenuHolder) {
+            event.setCancelled(true);
+        }
     }
 }

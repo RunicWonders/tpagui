@@ -69,14 +69,6 @@ public class LanguageManager {
         }
     }
 
-    public void setLanguage(String language) {
-        if (languageFiles.containsKey(language)) {
-            this.currentLanguage = language;
-            plugin.getConfig().set("language", language);
-            plugin.saveConfig();
-        }
-    }
-
     public String getLanguage() {
         return currentLanguage;
     }
@@ -89,6 +81,10 @@ public class LanguageManager {
         FileConfiguration langConfig = languageFiles.get(language);
         if (langConfig == null) {
             langConfig = languageFiles.get("zh_CN");
+        }
+        // 双层兜底（当前语言 + zh_CN）都不可用时返回 path，避免 NPE
+        if (langConfig == null) {
+            return path;
         }
         
         String message = langConfig.getString(path);
@@ -108,6 +104,10 @@ public class LanguageManager {
         FileConfiguration langConfig = languageFiles.get(currentLanguage);
         if (langConfig == null) {
             langConfig = languageFiles.get("zh_CN");
+        }
+        // 双层兜底（当前语言 + zh_CN）都不可用时返回 path，避免 NPE
+        if (langConfig == null) {
+            return path;
         }
         
         String message = langConfig.getString("log." + path);
@@ -131,10 +131,5 @@ public class LanguageManager {
 
     public FileConfiguration getLanguageConfig(String language) {
         return languageFiles.get(language);
-    }
-
-    public void reload() {
-        languageFiles.clear();
-        loadLanguages();
     }
 }

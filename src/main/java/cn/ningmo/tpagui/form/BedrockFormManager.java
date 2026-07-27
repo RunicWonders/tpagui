@@ -10,7 +10,6 @@ import org.geysermc.cumulus.SimpleForm;
 import org.geysermc.cumulus.util.FormImage;
 import org.geysermc.floodgate.api.FloodgateApi;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
-import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,7 @@ public class BedrockFormManager {
 
     public static void openTpaForm(Player player, int page) {
         TpaGui plugin = TpaGui.getInstance();
-        int playersPerPage = plugin.getConfig().getInt("java-dialog-gui.players-per-page", 20);
+        int playersPerPage = Math.max(1, plugin.getConfig().getInt("java-dialog-gui.players-per-page", 20));
         boolean showAvatars = plugin.getConfig().getBoolean("java-dialog-gui.show-avatars", true);
         String avatarApi = plugin.getConfig().getString("java-dialog-gui.avatar-api", "https://mc-heads.net/avatar/{uuid}/64");
 
@@ -46,8 +45,12 @@ public class BedrockFormManager {
         
         if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
             // Velocity 模式：获取全局玩家
+            boolean showCrossServer = plugin.getConfig().getBoolean("velocity.show-cross-server-players", true);
+            String selfServer = plugin.getConfig().getString("velocity.server-name", "");
             for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
                 if (gp.getUuid().equals(player.getUniqueId())) continue;
+                // 配置关闭跨服显示时，跳过其他服务器的玩家
+                if (!showCrossServer && !gp.getServer().equals(selfServer)) continue;
                 // 同服隐身玩家（SuperVanish 等）对无权限玩家隐藏
                 Player localPlayer = Bukkit.getPlayer(gp.getUuid());
                 if (localPlayer != null && !player.canSee(localPlayer)) continue;
@@ -70,12 +73,17 @@ public class BedrockFormManager {
         // 计算分页
         int totalPlayers = availablePlayers.size();
         int totalPages = (int) Math.ceil((double) totalPlayers / playersPerPage);
-        int start = page * playersPerPage;
+        // 页码越界时回退到最后一页（表单打开期间可能有玩家下线）
+        if (page * playersPerPage >= totalPlayers) {
+            page = Math.max(0, (totalPlayers - 1) / playersPerPage);
+        }
+        final int currentPage = page;
+        int start = currentPage * playersPerPage;
         int end = Math.min(start + playersPerPage, totalPlayers);
 
         // 创建表单
         SimpleForm.Builder formBuilder = SimpleForm.builder()
-            .title(plugin.getMessage("form.title") + (totalPages > 1 ? " (" + (page + 1) + "/" + totalPages + ")" : ""));
+            .title(plugin.getMessage("form.title") + (totalPages > 1 ? " (" + (currentPage + 1) + "/" + totalPages + ")" : ""));
 
         // 添加玩家按钮
         for (int i = start; i < end; i++) {
@@ -94,44 +102,60 @@ public class BedrockFormManager {
         }
 
         // 添加导航按钮
-        if (page > 0) {
+        if (currentPage > 0) {
             formBuilder.button(plugin.getMessage("gui.navigation.previous-page"), FormImage.Type.PATH, "textures/ui/left_arrow_custom");
         }
-        if (page < totalPages - 1) {
+        if (currentPage < totalPages - 1) {
             formBuilder.button(plugin.getMessage("gui.navigation.next-page"), FormImage.Type.PATH, "textures/ui/right_arrow_custom");
+        }
+        // 返回按钮（点击后执行配置的命令，如 /cd 返回主菜单）
+        final boolean showBackButton = plugin.getConfig().getBoolean("back-button.enabled", false);
+        if (showBackButton) {
+            formBuilder.button(plugin.getMessage("gui.navigation.back"), FormImage.Type.PATH, "textures/ui/cancel");
         }
 
         formBuilder.responseHandler((form, response) -> {
-            if (isClosedResponse(response)) {
-                // 玩家点击右上角 X 关闭表单，视为取消，静默处理
-                plugin.getLogger().info(plugin.getLogMessage("form-closed", "{player}", player.getName()));
-                return;
-            }
-
-            try {
-                int buttonId = Integer.parseInt(response.trim());
-                int playerCountOnPage = end - start;
-
-                if (buttonId < playerCountOnPage) {
-                    // 点击了玩家按钮
-                    TargetInfo target = availablePlayers.get(start + buttonId);
-                    openActionSelectForm(player, target);
-                } else {
-                    // 点击了导航按钮
-                    int navIndex = buttonId - playerCountOnPage;
-                    boolean hasPrev = page > 0;
-                    
-                    if (hasPrev && navIndex == 0) {
-                        // 上一页
-                        openTpaForm(player, page - 1);
-                    } else {
-                        // 下一页
-                        openTpaForm(player, page + 1);
-                    }
+            // Cumulus 回调不在服务器主线程触发，先切回玩家所在线程再访问 Bukkit API
+            runTask(player, () -> {
+                if (response == null) {
+                    plugin.getLogger().fine(plugin.getLogMessage("form-closed", "{player}", player.getName()));
+                    return;
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning(plugin.getLogMessage("form-response-error", "{error}", e.getMessage()));
-            }
+
+                try {
+                    int buttonId = Integer.parseInt(response.trim());
+                    int playerCountOnPage = end - start;
+
+                    if (buttonId < playerCountOnPage) {
+                        // 点击了玩家按钮
+                        TargetInfo target = availablePlayers.get(start + buttonId);
+                        openActionSelectForm(player, target);
+                    } else {
+                        // 导航/返回按钮，按添加顺序计算索引
+                        int navIndex = buttonId - playerCountOnPage;
+                        boolean hasPrev = currentPage > 0;
+                        boolean hasNext = currentPage < totalPages - 1;
+                        int nextIndex = hasPrev ? 1 : 0;
+                        int backIndex = (hasPrev ? 1 : 0) + (hasNext ? 1 : 0);
+                        
+                        if (hasPrev && navIndex == 0) {
+                            // 上一页
+                            openTpaForm(player, currentPage - 1);
+                        } else if (hasNext && navIndex == nextIndex) {
+                            // 下一页
+                            openTpaForm(player, currentPage + 1);
+                        } else if (showBackButton && navIndex == backIndex) {
+                            // 返回按钮：以玩家身份执行配置的命令（基岩版独立命令）
+                            String command = plugin.getConfig().getString("back-button.bedrock-command", "");
+                            if (command != null && !command.trim().isEmpty()) {
+                                executeAsPlayer(player, command.trim());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning(plugin.getLogMessage("form-response-error", "{error}", e.getMessage()));
+                }
+            });
         });
 
         sendForm(player, formBuilder.build());
@@ -145,43 +169,30 @@ public class BedrockFormManager {
             .button(plugin.getMessage("form.action.tpahere"), FormImage.Type.PATH, "textures/ui/world_glyph_color")
             .button(plugin.getMessage("form.action.back"), FormImage.Type.PATH, "textures/ui/cancel")
             .responseHandler((form1, response) -> {
-                if (isClosedResponse(response)) return;
-
-                int id;
-                try {
-                    id = Integer.parseInt(response.trim());
-                } catch (NumberFormatException e) {
-                    // 无法解析的响应视为关闭表单，静默处理
-                    return;
-                }
-                if (id == 0) {
-                    // TPA: 传送到目标玩家
-                    String cmdName = plugin.getConfig().getString("commands.tpa.to-player", "tpa");
-                    String fullCommand = "/" + cmdName + " " + target.name;
-                    runTask(player, () -> {
-                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
-                        try {
-                            player.chat(fullCommand);
-                        } finally {
-                            player.removeMetadata("TPAGUI_COMMAND", plugin);
-                        }
-                    });
-                } else if (id == 1) {
-                    // TPAHERE: 请求目标玩家传送到自己
-                    String cmdName = plugin.getConfig().getString("commands.tpa.here", "tpahere");
-                    String fullCommand = "/" + cmdName + " " + target.name;
-                    runTask(player, () -> {
-                        player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(plugin, true));
-                        try {
-                            player.chat(fullCommand);
-                        } finally {
-                            player.removeMetadata("TPAGUI_COMMAND", plugin);
-                        }
-                    });
-                } else if (id == 2) {
-                    // 返回主菜单
-                    openTpaForm(player, 0);
-                }
+                // Cumulus 回调不在服务器主线程触发，先切回玩家所在线程再访问 Bukkit API
+                runTask(player, () -> {
+                    if (response == null) return;
+                    
+                    int id;
+                    try {
+                        id = Integer.parseInt(response.trim());
+                    } catch (NumberFormatException e) {
+                        plugin.getLogger().warning(plugin.getLogMessage("form-response-error", "{error}", e.getMessage()));
+                        return;
+                    }
+                    if (id == 0) {
+                        // TPA: 传送到目标玩家
+                        String cmdName = plugin.getConfig().getString("commands.tpa.to-player", "tpa");
+                        executeAsPlayer(player, cmdName + " " + target.name);
+                    } else if (id == 1) {
+                        // TPAHERE: 请求目标玩家传送到自己
+                        String cmdName = plugin.getConfig().getString("commands.tpa.here", "tpahere");
+                        executeAsPlayer(player, cmdName + " " + target.name);
+                    } else if (id == 2) {
+                        // 返回主菜单
+                        openTpaForm(player, 0);
+                    }
+                });
             })
             .build();
         
@@ -205,43 +216,27 @@ public class BedrockFormManager {
         }
     }
 
-    private static void executeDenyCommands(Player player) {
-        runTask(player, () -> {
-            List<String> denyCommands = TpaGui.getInstance().getConfig().getStringList("commands.deny");
-            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-            try {
-                for (String cmd : denyCommands) {
-                    player.chat("/" + cmd);
-                }
-            } finally {
-                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-            }
-        });
+    /**
+     * 以玩家身份执行命令（在玩家所在线程调度，兼容Folia）
+     * @param player 玩家
+     * @param command 不带斜杠的命令
+     */
+    private static void executeAsPlayer(Player player, String command) {
+        // performCommand 不接受前导斜杠，统一剥离
+        String cmd = command.startsWith("/") ? command.substring(1) : command;
+        runTask(player, () -> player.performCommand(cmd));
+    }
+
+    private static void executeDenyCommands(Player player, String requester) {
+        for (String cmd : TpaGui.getInstance().getConfig().getStringList("commands.deny")) {
+            executeAsPlayer(player, cmd + " " + requester);
+        }
     }
 
     private static void executeAcceptCommands(Player player, String requester) {
-        runTask(player, () -> {
-            List<String> acceptCommands = TpaGui.getInstance().getConfig().getStringList("commands.accept");
-            player.setMetadata("TPAGUI_COMMAND", new FixedMetadataValue(TpaGui.getInstance(), true));
-            try {
-                for (String cmd : acceptCommands) {
-                    player.chat("/" + cmd + " " + requester);
-                }
-            } finally {
-                player.removeMetadata("TPAGUI_COMMAND", TpaGui.getInstance());
-            }
-        });
-    }
-
-    /**
-     * 判断表单响应是否为"关闭表单"
-     * Geyser 在玩家关闭表单时回传的原始数据为 null、空串或字符串 "null"，
-     * 统一视为取消操作，不应作为错误处理
-     * @param response 表单原始响应数据
-     * @return 是否为关闭表单
-     */
-    private static boolean isClosedResponse(String response) {
-        return response == null || response.trim().isEmpty() || response.trim().equalsIgnoreCase("null");
+        for (String cmd : TpaGui.getInstance().getConfig().getStringList("commands.accept")) {
+            executeAsPlayer(player, cmd + " " + requester);
+        }
     }
 
     /**
@@ -258,24 +253,11 @@ public class BedrockFormManager {
     }
 
     public static void sendTpaRequestForm(Player target, String requester, boolean isTpaHere) {
-        // 添加调试日志
-        TpaGui.getInstance().getLogger().info(
-            TpaGui.getInstance().getLogMessage("preparing-send-form",
-                "{player}", target.getName())
-        );
-        
         try {
             String title = TpaGui.getInstance().getMessage("form.request.title");
             String content = TpaGui.getInstance().getMessage(
                 isTpaHere ? "form.request.content-here" : "form.request.content-to",
                 "{player}", requester
-            );
-            
-            // 添加调试日志
-            TpaGui.getInstance().getLogger().info(
-                TpaGui.getInstance().getLogMessage("form-content",
-                    "{title}", title,
-                    "{content}", content)
             );
             
             SimpleForm form = SimpleForm.builder()
@@ -284,22 +266,31 @@ public class BedrockFormManager {
                 .button(TpaGui.getInstance().getMessage("form.request.accept"))
                 .button(TpaGui.getInstance().getMessage("form.request.deny"))
                 .responseHandler((form1, response) -> {
-                    if (isClosedResponse(response)) {
-                        // 玩家关闭表单，记录到控制台并发送消息
-                        TpaGui.getInstance().getLogger().info(
-                            TpaGui.getInstance().getLogMessage("request-form-closed",
-                                "{player}", target.getName(),
-                                "{requester}", requester)
-                        );
-                        target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
-                        // 执行拒绝命令
-                        executeDenyCommands(target);
-                        return;
-                    }
-                    
-                    try {
-                        // 去除可能的空白字符
-                        int buttonId = Integer.parseInt(response.trim());
+                    // Cumulus 回调不在服务器主线程触发，先切回玩家所在线程再访问 Bukkit API
+                    runTask(target, () -> {
+                        if (response == null || response.trim().isEmpty()) {
+                            // 玩家关闭表单：仅记录日志，不执行任何命令
+                            TpaGui.getInstance().getLogger().info(
+                                TpaGui.getInstance().getLogMessage("request-form-closed",
+                                    "{player}", target.getName(),
+                                    "{requester}", requester)
+                            );
+                            return;
+                        }
+                        
+                        int buttonId;
+                        try {
+                            // 去除可能的空白字符
+                            buttonId = Integer.parseInt(response.trim());
+                        } catch (NumberFormatException e) {
+                            // 无效响应：仅记录日志，不执行任何命令
+                            TpaGui.getInstance().getLogger().fine(
+                                TpaGui.getInstance().getLogMessage("form-response-parse",
+                                    "{error}", e.getMessage())
+                            );
+                            return;
+                        }
+                        
                         if (buttonId == 0) {
                             // 记录到控制台
                             TpaGui.getInstance().getLogger().info(
@@ -323,23 +314,9 @@ public class BedrockFormManager {
                             // 发送拒绝消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.denied", "{player}", requester));
                             // 执行拒绝命令
-                            executeDenyCommands(target);
+                            executeDenyCommands(target, requester);
                         }
-                    } catch (NumberFormatException e) {
-                        // 记录错误，但不显示给玩家，因为可能是关闭表单导致的
-                        TpaGui.getInstance().getLogger().fine(
-                            TpaGui.getInstance().getLogMessage("form-response-parse",
-                                "{error}", e.getMessage())
-                        );
-                        // 当作关闭表单处理
-                        TpaGui.getInstance().getLogger().info(
-                            TpaGui.getInstance().getLogMessage("request-form-closed",
-                                "{player}", target.getName(),
-                                "{requester}", requester)
-                        );
-                        target.sendMessage(TpaGui.getInstance().getMessage("form.request.closed", "{player}", requester));
-                        executeDenyCommands(target);
-                    }
+                    });
                 })
                 .build();
             
@@ -356,8 +333,7 @@ public class BedrockFormManager {
                 FloodgatePlayer floodgatePlayer = api.getPlayer(target.getUniqueId());
                 if (floodgatePlayer != null) {
                     floodgatePlayer.sendForm(form);
-                    // 添加调试日志
-                    TpaGui.getInstance().getLogger().info(
+                    TpaGui.getInstance().getLogger().fine(
                         TpaGui.getInstance().getLogMessage("form-sent",
                             "{player}", target.getName())
                     );

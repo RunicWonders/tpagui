@@ -21,18 +21,22 @@ public class GuiManager {
     
     public static Inventory createTpaMenu(Player player, int page) {
         TpaGui plugin = TpaGui.getInstance();
-        int playersPerPage = plugin.getConfig().getInt("java-dialog-gui.players-per-page", 45);
-        if (playersPerPage > 45) playersPerPage = 45; // 最多 5 行
+        int playersPerPage = Math.max(1, Math.min(45,
+            plugin.getConfig().getInt("java-dialog-gui.players-per-page", 45))); // 钳制在 1~45，最多 5 行
 
-        Inventory inv = Bukkit.createInventory(null, ROWS * 9, 
+        Inventory inv = Bukkit.createInventory(new TpaMenuHolder(page), ROWS * 9, 
             plugin.getMessage("gui.title", "{page}", String.valueOf(page + 1)));
         
         List<Object> availablePlayers = new ArrayList<>();
         
         if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
             // Velocity 模式：获取全局玩家
+            boolean showCrossServer = plugin.getConfig().getBoolean("velocity.show-cross-server-players", true);
+            String selfServer = plugin.getConfig().getString("velocity.server-name", "");
             for (GlobalPlayer gp : PlayerManager.getGlobalPlayers()) {
                 if (gp.getUuid().equals(player.getUniqueId())) continue;
+                // 配置关闭时跳过其他服务器的玩家
+                if (!showCrossServer && !gp.getServer().equals(selfServer)) continue;
                 // 同服隐身玩家（SuperVanish 等）对无权限玩家隐藏
                 Player localPlayer = Bukkit.getPlayer(gp.getUuid());
                 if (localPlayer != null && !player.canSee(localPlayer)) continue;
@@ -65,8 +69,9 @@ public class GuiManager {
             
             if (skull != null && skull.getItemMeta() != null) {
                 inv.setItem(slotIndex, skull);
-                slotIndex++;
             }
+            // 无论头颅创建成功与否都占用一个 slot，保证分页索引不错位
+            slotIndex++;
         }
         
         // 在底部（第6行）添加翻页按钮
@@ -77,6 +82,17 @@ public class GuiManager {
         if (totalPlayers > 0 && page < totalPages - 1) {
             inv.setItem(53, createNavigationItem(Material.ARROW, 
                 plugin.getMessage("gui.navigation.next-page")));
+        }
+        
+        // 底部中央放置返回按钮（可配置材质，点击执行自定义命令）
+        if (plugin.getConfig().getBoolean("back-button.enabled", false)) {
+            Material material = Material.matchMaterial(
+                plugin.getConfig().getString("back-button.material", "BARRIER"));
+            if (material == null) {
+                material = Material.BARRIER;
+            }
+            inv.setItem(49, createNavigationItem(material,
+                plugin.getMessage("gui.navigation.back")));
         }
         
         return inv;
@@ -145,7 +161,8 @@ public class GuiManager {
         List<String> lore = new ArrayList<>();
         FileConfiguration langConfig = plugin.getLanguageManager().getLanguageConfig(plugin.getLanguageManager().getLanguage());
         if (langConfig != null) {
-            for (String line : langConfig.getStringList("gui.skull.lore")) {
+            // 跨服玩家使用专用 lore（含 {server} 占位符）
+            for (String line : langConfig.getStringList("gui.skull.lore-global")) {
                 String processedLine = line.replace("{server}", gp.getServer());
                 lore.add(ChatColor.translateAlternateColorCodes('&', processedLine));
             }

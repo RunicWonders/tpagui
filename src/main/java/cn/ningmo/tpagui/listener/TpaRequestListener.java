@@ -1,18 +1,16 @@
 package cn.ningmo.tpagui.listener;
 
 import cn.ningmo.tpagui.TpaGui;
-import cn.ningmo.tpagui.form.BedrockFormManager;
 import cn.ningmo.tpagui.form.JavaDialogManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.geysermc.floodgate.api.FloodgateApi;
 
 public class TpaRequestListener implements Listener {
     
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String command = event.getMessage().toLowerCase();
         
@@ -59,39 +57,7 @@ public class TpaRequestListener implements Listener {
             return;
         }
 
-        // 检查目标玩家是否为基岩版玩家
-        if (plugin.isFloodgateEnabled()) {
-            try {
-                FloodgateApi api = FloodgateApi.getInstance();
-                if (api != null && api.isFloodgatePlayer(target.getUniqueId())) {
-                    // 发送基岩版表单
-                    BedrockFormManager.sendTpaRequestForm(
-                        target, 
-                        event.getPlayer().getName(), 
-                        isTpaHere
-                    );
-                    
-                    // 调试信息
-                    String commandType = isTpaHere ? tpaHereCommand : plugin.getConfig().getString("commands.tpa.to-player", "tpa");
-                    plugin.getLogger().info(
-                        plugin.getLogMessage("send-request-form",
-                            "{target}", target.getName(),
-                            "{requester}", event.getPlayer().getName(),
-                            "{type}", commandType)
-                    );
-                    return; // 已处理，返回
-                }
-            } catch (Exception e) {
-                plugin.getLogger().warning(
-                    plugin.getLogMessage("floodgate-request-error",
-                        "{error}", e.getMessage())
-                );
-            }
-        }
-
-        // 如果不是基岩版玩家，检查是否支持 Java 1.21.6+ /dialog
-        if (plugin.isDialogSupported() && plugin.getConfig().getBoolean("java-dialog-gui.enabled", true)) {
-            JavaDialogManager.sendTpaRequestDialog(target, event.getPlayer().getName(), isTpaHere);
-        }
+        // 分发传送请求：基岩版表单 -> Java Dialog -> 聊天消息兜底
+        JavaDialogManager.dispatchTpaRequest(target, event.getPlayer().getName(), isTpaHere);
     }
 }

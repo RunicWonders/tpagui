@@ -23,8 +23,8 @@ public class UpdateChecker {
     private final java.util.function.Consumer<String> logger;
     private final java.util.function.Function<String, String> i18n;
     private final java.util.function.Supplier<Boolean> isEnabled;
-    private String latestVersion;
-    private String downloadUrl;
+    private volatile String latestVersion;
+    private volatile String downloadUrl;
     
     public UpdateChecker(String currentVersion, java.util.function.Consumer<String> logger, 
                         java.util.function.Function<String, String> i18n, 
