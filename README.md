@@ -1,66 +1,68 @@
 # TpaGui
 
-为 TPA 插件提供图形界面的 Paper 插件：Java 版箱子菜单、基岩版表单、1.21.6+ 原生 Dialog 请求提示，并支持 Velocity 跨服玩家列表。
+**English** | [简体中文](README_CN.md)
+
+A Paper plugin that adds a graphical interface to your TPA plugin: chest GUI for Java players, native forms for Bedrock, native Dialog request prompts on 1.21.6+, and Velocity cross-server player lists.
 
 [![Modrinth](https://img.shields.io/modrinth/v/tpagui?label=Modrinth&logo=modrinth)](https://modrinth.com/plugin/tpagui)
 [![GitHub](https://img.shields.io/github/v/release/RunicWonders/tpagui?label=GitHub&logo=github)](https://github.com/RunicWonders/tpagui/releases)
 
-TpaGui 本身不实现传送逻辑，而是作为 GUI 层调用你现有的 TPA 插件（EssentialsX、HuskHomes 等）的命令，可与之任意搭配。
+TpaGui does not implement teleportation itself — it acts as a GUI layer on top of your existing TPA plugin (EssentialsX, HuskHomes, etc.) and works with any of them.
 
-## 快速开始
+## Quick Start
 
-1. 将 jar 放入 `plugins/` 目录，重启服务器
-2. 在 `plugins/TpaGui/config.yml` 的 `commands.listen-commands` 中确认你的 TPA 命令（默认 `tpa`/`tpahere`）
-3. 玩家输入 `/tpagui` 打开菜单，点击头颅发起请求
+1. Drop the jar into your `plugins/` folder and restart the server
+2. Check `commands.listen-commands` in `plugins/TpaGui/config.yml` matches your TPA plugin (default: `tpa`/`tpahere`)
+3. Players run `/tpagui` to open the menu and click a head to send a request
 
-## 功能
+## Features
 
-### Java 版
-- 箱子菜单展示在线玩家头颅，左键 `/tpa`、右键 `/tpahere`
-- 多页显示与翻页按钮，自动隐藏隐身玩家（兼容 SuperVanish）
-- 可配置返回按钮（自定义材质，点击执行任意命令，如 `/cd` 返回主菜单）
-- 1.21.6+ 收到传送请求时可弹出原生 Dialog 接受/拒绝（需自备数据包，未安装时自动降级为聊天提示）
+### Java Edition
+- Chest GUI with online player heads: left-click for `/tpa`, right-click for `/tpahere`
+- Pagination with prev/next buttons; vanished players are hidden automatically (SuperVanish compatible)
+- Configurable back button (custom material, runs any command on click, e.g. `/cd` to return to a main menu)
+- On 1.21.6+, incoming requests can show a native accept/deny Dialog (requires a datapack; falls back to chat messages automatically)
 
-### 基岩版（Geyser/Floodgate）
-- 自动识别基岩版玩家，改用 Cumulus 表单
-- 玩家列表支持头像、分页，传送请求以弹窗形式接受/拒绝
-- 返回按钮命令可与 Java 版分开配置（如 `/gmenu`）
+### Bedrock Edition (Geyser/Floodgate)
+- Bedrock players are detected automatically and served Cumulus forms instead
+- Player list with avatars and pagination; teleport requests shown as accept/deny pop-ups
+- Back button command can be configured separately from Java (e.g. `/gmenu`)
 
-### Velocity 跨服
-- 从 Velocity 代理同步全服玩家列表，跨服发起传送请求
-- 可配置是否显示其他服务器的玩家
+### Velocity Cross-server
+- Syncs the network-wide player list from the Velocity proxy; send teleport requests across servers
+- Optional toggle to hide players from other servers
 
-### 通用
-- 多语言：简体中文 / 繁体中文 / English，所有文本可自定义
-- TPA 命令、接受/拒绝命令全部可配置，适配各类 TPA 插件
-- 控制台执行 `/tpagui` 可查看在线玩家列表
-- 启动与周期性更新检查（可配置间隔）
+### General
+- Multi-language: Simplified Chinese / Traditional Chinese / English; all text customizable
+- TPA, accept and deny commands fully configurable to fit any TPA plugin
+- Run `/tpagui` from console to list online players
+- Startup and periodic update checks (configurable interval)
 
-## 命令
-- `/tpagui` - 打开传送请求菜单（别名: `/tpag`, `/tgui`）
+## Commands
+- `/tpagui` - Open the teleport request menu (aliases: `/tpag`, `/tgui`)
 
-## 权限
-- `tpagui.use` - 使用 /tpagui 命令（默认所有玩家）
-- `tpagui.admin` - 接收更新通知（默认 OP）
+## Permissions
+- `tpagui.use` - Use the /tpagui command (default: everyone)
+- `tpagui.admin` - Receive update notifications (default: OP)
 
-## 配置
+## Configuration
 
-主要配置项（完整注释见 `config.yml`）：
+Main sections (see `config.yml` for full comments):
 
-| 配置节 | 说明 |
-|--------|------|
-| `language` | 界面语言（zh_CN / zh_TW / en_US） |
-| `velocity` | 跨服同步开关、本服名称、同步间隔 |
-| `java-dialog-gui` | 每页玩家数、头像显示与头像 API |
-| `back-button` | 返回按钮开关、材质、Java/基岩各自执行的命令 |
-| `commands` | TPA 命令名、监听命令列表、接受/拒绝命令 |
-| `update-check` | 更新检查开关与间隔 |
+| Section | Description |
+|---------|-------------|
+| `language` | Interface language (zh_CN / zh_TW / en_US) |
+| `velocity` | Cross-server sync toggle, server name, sync interval |
+| `java-dialog-gui` | Players per page, avatar display and avatar API |
+| `back-button` | Back button toggle, material, separate Java/Bedrock commands |
+| `commands` | TPA command names, listened commands, accept/deny commands |
+| `update-check` | Update check toggle and interval |
 
-## 依赖
-- 必需: Paper 1.21+（或其分支）
-- 可选: Floodgate（基岩版表单支持）
-- 可选: Velocity（跨服玩家同步，代理端放入同一 jar）
+## Dependencies
+- Required: Paper 1.21+ (or a fork)
+- Optional: Floodgate (Bedrock form support)
+- Optional: Velocity (cross-server player sync — the same jar works on the proxy)
 
 ## License
 
-MIT，见 [LICENSE](LICENSE)。
+MIT, see [LICENSE](LICENSE).
