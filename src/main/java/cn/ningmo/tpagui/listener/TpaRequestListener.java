@@ -22,7 +22,13 @@ public class TpaRequestListener implements Listener {
         public final String requesterName;
         public final boolean isTpaHere;
         private final long timestamp = System.currentTimeMillis();
+        private boolean reopenHintSent;
         public PendingRequest(String name, boolean here) { requesterName = name; isTpaHere = here; }
+        public boolean markReopenHintSent() {
+            if (reopenHintSent) return false;
+            reopenHintSent = true;
+            return true;
+        }
         public boolean isExpired() {
             return System.currentTimeMillis() - timestamp >= Math.max(1,
                 TpaGui.getInstance().getConfig().getInt("request-expire-seconds", 300)) * 1000L;
@@ -41,6 +47,19 @@ public class TpaRequestListener implements Listener {
         PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, "/" + normalized);
         Bukkit.getPluginManager().callEvent(event);
         if (!event.isCancelled()) player.performCommand(event.getMessage().replaceFirst("^/", ""));
+    }
+
+    public static String resolveCommand(String command, String requester) {
+        String normalized = command.trim();
+        return normalized.contains("{player}")
+            ? normalized.replace("{player}", requester)
+            : normalized + " " + requester;
+    }
+
+    public static void executeConfiguredCommands(Player player, String path, String requester) {
+        for (String command : TpaGui.getInstance().getConfig().getStringList(path)) {
+            executeAsPlayer(player, resolveCommand(command, requester));
+        }
     }
 
     private static String label(String command) {

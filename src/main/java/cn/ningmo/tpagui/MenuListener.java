@@ -45,17 +45,15 @@ public class MenuListener implements Listener {
                 if (!confirm.getTargetUuid().equals(player.getUniqueId())) return;
                 TpaRequestListener.PendingRequest request = confirm.getRequest();
                 if (request.isExpired() || !TpaRequestListener.pendingRequests.remove(player.getUniqueId(), request)) {
+                    TpaRequestListener.pendingRequests.remove(player.getUniqueId(), request);
                     player.closeInventory();
                     player.sendMessage(TpaGui.getInstance().getMessage("request-expired"));
                     return;
                 }
                 player.closeInventory();
                 TpaGui plugin = TpaGui.getInstance();
-                for (String cmd : plugin.getConfig().getStringList(slot == 11 ? "commands.accept" : "commands.deny")) {
-                    String resolved = cmd.contains("{player}") ? cmd.replace("{player}", request.requesterName)
-                        : cmd + " " + request.requesterName;
-                    TpaRequestListener.executeAsPlayer(player, resolved);
-                }
+                TpaRequestListener.executeConfiguredCommands(player,
+                    slot == 11 ? "commands.accept" : "commands.deny", request.requesterName);
                 player.sendMessage(plugin.getMessage(slot == 11 ? "form.request.accepted" : "form.request.denied",
                     "{player}", request.requesterName));
                 return;
@@ -93,7 +91,8 @@ public class MenuListener implements Listener {
         SchedulerUtil.runTask(player, () -> {
             if (TpaRequestListener.pendingRequests.get(player.getUniqueId()) == holder.getRequest()
                     && !holder.getRequest().isExpired()
-                    && !(player.getOpenInventory().getTopInventory().getHolder() instanceof ConfirmMenuHolder))
+                    && !(player.getOpenInventory().getTopInventory().getHolder() instanceof ConfirmMenuHolder)
+                    && holder.getRequest().markReopenHintSent())
                 player.sendMessage(TpaGui.getInstance().getMessage("request-reopen-hint"));
         });
     }

@@ -61,6 +61,10 @@ With `auto`, the form is resent while the player is online, the request is still
 - Velocity can synchronize the network-wide player list and route cross-server requests through the plugin message channel.
 - The same plugin jar can be used on the participating backend servers when Velocity mode is configured.
 
+## Known Limitations
+
+TpaGui observes the player's TPA command because third-party TPA plugins do not expose a common request-created event. It cannot know whether the external plugin ultimately accepted the command. A confirmation GUI may therefore appear even when the player lacks permission, the target has disabled requests, or the TPA plugin rejects the request for another reason.
+
 ## Commands
 
 - `/tpagui` - Open the player menu, or reopen a pending incoming request.

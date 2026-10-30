@@ -55,7 +55,7 @@ public class JavaDialogManager {
             cn.ningmo.tpagui.menu.JavaConfirmMenu.open(target, request);
             return;
         }
-        if (!plugin.isFolia() && sendTpaRequestDialog(target, requesterName, isTpaHere)) {
+        if (sendTpaRequestDialog(target, requesterName, isTpaHere)) {
             return;
         }
 

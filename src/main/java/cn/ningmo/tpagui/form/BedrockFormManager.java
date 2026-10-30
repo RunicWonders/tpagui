@@ -227,18 +227,6 @@ public class BedrockFormManager {
         runTask(player, () -> cn.ningmo.tpagui.listener.TpaRequestListener.executeAsPlayer(player, cmd));
     }
 
-    private static void executeDenyCommands(Player player, String requester) {
-        for (String cmd : TpaGui.getInstance().getConfig().getStringList("commands.deny")) {
-            executeAsPlayer(player, cmd + " " + requester);
-        }
-    }
-
-    private static void executeAcceptCommands(Player player, String requester) {
-        for (String cmd : TpaGui.getInstance().getConfig().getStringList("commands.accept")) {
-            executeAsPlayer(player, cmd + " " + requester);
-        }
-    }
-
     /**
      * 在玩家所在线程执行任务（兼容Folia）
      * @param player 玩家
@@ -273,6 +261,8 @@ public class BedrockFormManager {
                     cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(target.getUniqueId());
                 if (target.isOnline() && plugin.isEnabled() && current == request && !request.isExpired()) {
                     sendTpaRequestForm(target, requester, isTpaHere);
+                } else if (current == request && request.isExpired()) {
+                    cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.remove(target.getUniqueId(), request);
                 }
             }, interval * 20L);
         } else {
@@ -331,6 +321,11 @@ public class BedrockFormManager {
                         }
                         
                         if (buttonId != 0 && buttonId != 1) return;
+                        if (boundRequest.isExpired()) {
+                            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.remove(target.getUniqueId(), boundRequest);
+                            target.sendMessage(TpaGui.getInstance().getMessage("request-expired"));
+                            return;
+                        }
                         cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest pending =
                             cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(target.getUniqueId());
                         if (pending != boundRequest || pending.isExpired()
@@ -338,6 +333,7 @@ public class BedrockFormManager {
                                 || pending.isTpaHere != isTpaHere
                                 || !cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests
                                     .remove(target.getUniqueId(), boundRequest)) {
+                            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.remove(target.getUniqueId(), boundRequest);
                             target.sendMessage(TpaGui.getInstance().getMessage("request-expired"));
                             return;
                         }
@@ -350,7 +346,7 @@ public class BedrockFormManager {
                             );
                             
                             // 执行接受命令
-                            executeAcceptCommands(target, requester);
+                            cn.ningmo.tpagui.listener.TpaRequestListener.executeConfiguredCommands(target, "commands.accept", requester);
                             
                             // 发送确认消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.accepted", "{player}", requester));
@@ -364,7 +360,7 @@ public class BedrockFormManager {
                             // 发送拒绝消息
                             target.sendMessage(TpaGui.getInstance().getMessage("form.request.denied", "{player}", requester));
                             // 执行拒绝命令
-                            executeDenyCommands(target, requester);
+                            cn.ningmo.tpagui.listener.TpaRequestListener.executeConfiguredCommands(target, "commands.deny", requester);
                         }
                     });
                 })
