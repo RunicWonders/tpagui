@@ -1,6 +1,16 @@
 # 语言配置
 # 可选值: zh_CN (简体中文), zh_TW (繁体中文), en_US (英文)
 language: "zh_CN"
+request-expire-seconds: 300
+java-request-gui:
+  enabled: true
+
+# 基岩版被请求表单重新打开策略
+# prompt: 表单关闭或因后台切换消失时提示玩家输入 /tpagui
+# auto: 按间隔自动重新发送表单，直到请求被处理或过期
+bedrock-request:
+  reopen-mode: "prompt"
+  resend-interval-seconds: 3
 
 # Velocity 跨服同步配置
 velocity:

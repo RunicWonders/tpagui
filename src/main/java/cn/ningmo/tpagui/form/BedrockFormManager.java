@@ -224,7 +224,7 @@ public class BedrockFormManager {
     private static void executeAsPlayer(Player player, String command) {
         // performCommand 不接受前导斜杠，统一剥离
         String cmd = command.startsWith("/") ? command.substring(1) : command;
-        runTask(player, () -> player.performCommand(cmd));
+        runTask(player, () -> cn.ningmo.tpagui.listener.TpaRequestListener.executeAsPlayer(player, cmd));
     }
 
     private static void executeDenyCommands(Player player, String requester) {
@@ -252,9 +252,46 @@ public class BedrockFormManager {
         }
     }
 
+    private static void runTaskLater(Player player, Runnable runnable, long delayTicks) {
+        TpaGui plugin = TpaGui.getInstance();
+        if (plugin.isFolia()) {
+            player.getScheduler().runDelayed(plugin, task -> runnable.run(), null, delayTicks);
+        } else {
+            Bukkit.getScheduler().runTaskLater(plugin, runnable, delayTicks);
+        }
+    }
+
+    private static void handleBedrockFormClosed(Player target, String requester, boolean isTpaHere,
+                                                 cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest request) {
+        TpaGui plugin = TpaGui.getInstance();
+        String mode = plugin.getConfig().getString("bedrock-request.reopen-mode", "prompt");
+        if ("auto".equalsIgnoreCase(mode)) {
+            long interval = Math.max(1L, plugin.getConfig().getLong(
+                "bedrock-request.resend-interval-seconds", 3L));
+            runTaskLater(target, () -> {
+                cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest current =
+                    cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(target.getUniqueId());
+                if (target.isOnline() && plugin.isEnabled() && current == request && !request.isExpired()) {
+                    sendTpaRequestForm(target, requester, isTpaHere);
+                }
+            }, interval * 20L);
+        } else {
+            target.sendMessage(plugin.getMessage("request-reopen-hint"));
+        }
+    }
+
     public static void sendTpaRequestForm(Player target, String requester, boolean isTpaHere) {
+        TpaGui plugin = TpaGui.getInstance();
+        cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest request =
+            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(target.getUniqueId());
+        if (request == null || !request.requesterName.equalsIgnoreCase(requester)
+                || request.isTpaHere != isTpaHere) {
+            request = new cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest(requester, isTpaHere);
+            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.put(target.getUniqueId(), request);
+        }
+        final cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest boundRequest = request;
         try {
-            String title = TpaGui.getInstance().getMessage("form.request.title");
+            String title = plugin.getMessage("form.request.title");
             String content = TpaGui.getInstance().getMessage(
                 isTpaHere ? "form.request.content-here" : "form.request.content-to",
                 "{player}", requester
@@ -269,12 +306,14 @@ public class BedrockFormManager {
                     // Cumulus 回调不在服务器主线程触发，先切回玩家所在线程再访问 Bukkit API
                     runTask(target, () -> {
                         if (response == null || response.trim().isEmpty()) {
-                            // 玩家关闭表单：仅记录日志，不执行任何命令
+                            // Floodgate 在后台切换、聊天栏打开等情况下也可能回调 null。
+                            // 保留请求，并按配置提示或重新发送，不把它当作已处理。
                             TpaGui.getInstance().getLogger().info(
                                 TpaGui.getInstance().getLogMessage("request-form-closed",
                                     "{player}", target.getName(),
                                     "{requester}", requester)
                             );
+                            handleBedrockFormClosed(target, requester, isTpaHere, boundRequest);
                             return;
                         }
                         
@@ -291,6 +330,17 @@ public class BedrockFormManager {
                             return;
                         }
                         
+                        if (buttonId != 0 && buttonId != 1) return;
+                        cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest pending =
+                            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(target.getUniqueId());
+                        if (pending != boundRequest || pending.isExpired()
+                                || !pending.requesterName.equalsIgnoreCase(requester)
+                                || pending.isTpaHere != isTpaHere
+                                || !cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests
+                                    .remove(target.getUniqueId(), boundRequest)) {
+                            target.sendMessage(TpaGui.getInstance().getMessage("request-expired"));
+                            return;
+                        }
                         if (buttonId == 0) {
                             // 记录到控制台
                             TpaGui.getInstance().getLogger().info(

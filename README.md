@@ -2,66 +2,80 @@
 
 **English** | [简体中文](README_CN.md)
 
-A Paper plugin that adds a graphical interface to your TPA plugin: chest GUI for Java players, native forms for Bedrock, native Dialog request prompts on 1.21.6+, and Velocity cross-server player lists.
+A Paper plugin that adds a graphical interface to your TPA plugin: a protected chest GUI for Java players, Cumulus forms for Bedrock players, native Dialog support on 1.21.6+, and Velocity cross-server player lists. Folia is supported.
 
 [![Modrinth](https://img.shields.io/modrinth/v/tpagui?label=Modrinth&logo=modrinth)](https://modrinth.com/plugin/tpagui)
 [![GitHub](https://img.shields.io/github/v/release/RunicWonders/tpagui?label=GitHub&logo=github)](https://github.com/RunicWonders/tpagui/releases)
 
-TpaGui does not implement teleportation itself — it acts as a GUI layer on top of your existing TPA plugin (EssentialsX, HuskHomes, etc.) and works with any of them.
+TpaGui does not implement teleportation itself. It acts as a GUI layer on top of an existing TPA plugin such as EssentialsX or HuskHomes.
 
 ## Quick Start
 
-1. Drop the jar into your `plugins/` folder and restart the server
-2. Check `commands.listen-commands` in `plugins/TpaGui/config.yml` matches your TPA plugin (default: `tpa`/`tpahere`)
-3. Players run `/tpagui` to open the menu and click a head to send a request
+1. Drop the jar into `plugins/` and restart the server.
+2. Check `commands.listen-commands` in `plugins/TpaGui/config.yml` matches your TPA plugin.
+3. Players run `/tpagui` to open the player menu and click a head to send a request.
 
 ## Features
 
 ### Java Edition
-- Chest GUI with online player heads: left-click for `/tpa`, right-click for `/tpahere`
-- Pagination with prev/next buttons; vanished players are hidden automatically (SuperVanish compatible)
-- Configurable back button (custom material, runs any command on click, e.g. `/cd` to return to a main menu)
-- On 1.21.6+, incoming requests can show a native accept/deny Dialog (requires a datapack; falls back to chat messages automatically)
 
-### Bedrock Edition (Geyser/Floodgate)
-- Bedrock players are detected automatically and served Cumulus forms instead
-- Player list with avatars and pagination; teleport requests shown as accept/deny pop-ups
-- Back button command can be configured separately from Java (e.g. `/gmenu`)
+- Chest GUI with online player heads: left-click for `/tpa`, right-click for `/tpahere`.
+- Pagination, configurable back button, and hidden-player filtering.
+- Incoming requests use the Java confirmation GUI, with accept/deny actions and expiry checks.
+- Inventory clicks, shift-clicks, hotbar swaps, number-key actions, and drag actions are blocked so player items cannot be moved into or lost in the menu.
+- 1.21.6+ native Dialog support remains available when the Java confirmation GUI is disabled.
 
-### Velocity Cross-server
-- Syncs the network-wide player list from the Velocity proxy; send teleport requests across servers
-- Optional toggle to hide players from other servers
+### Bedrock Edition
 
-### General
-- Multi-language: Simplified Chinese / Traditional Chinese / English; all text customizable
-- TPA, accept and deny commands fully configurable to fit any TPA plugin
-- Run `/tpagui` from console to list online players
-- Startup and periodic update checks (configurable interval)
+- Floodgate players use Cumulus forms for the player menu and incoming request confirmation.
+- Incoming Bedrock requests validate the bound requester, request type, expiry, and one-time consumption before running accept/deny commands.
+- If a form disappears because the player opens chat or switches to the background, the request is kept pending.
+- Configure whether the player is prompted to run `/tpagui` or the form is resent automatically:
+
+```yaml
+bedrock-request:
+  reopen-mode: "prompt" # prompt or auto
+  resend-interval-seconds: 3
+```
+
+`auto` resends while the request is still online, current, and unexpired. It stops after accept, deny, replacement, expiry, or disconnect.
+
+### Folia and Velocity
+
+- Folia player and region schedulers are used for player-bound GUI, form, and command operations.
+- Velocity can synchronize the network-wide player list and route cross-server requests.
 
 ## Commands
-- `/tpagui` - Open the teleport request menu (aliases: `/tpag`, `/tgui`)
+
+- `/tpagui` - Open the teleport request menu or reopen a pending incoming request.
+- Aliases: `/tpag`, `/tgui`.
 
 ## Permissions
-- `tpagui.use` - Use the /tpagui command (default: everyone)
-- `tpagui.admin` - Receive update notifications (default: OP)
+
+- `tpagui.use` - Use `/tpagui` (default: everyone).
+- `tpagui.admin` - Receive update notifications (default: OP).
 
 ## Configuration
 
-Main sections (see `config.yml` for full comments):
+See `src/main/resources/config.yml` for the complete commented configuration. Main sections:
 
 | Section | Description |
 |---------|-------------|
-| `language` | Interface language (zh_CN / zh_TW / en_US) |
-| `velocity` | Cross-server sync toggle, server name, sync interval |
-| `java-dialog-gui` | Players per page, avatar display and avatar API |
-| `back-button` | Back button toggle, material, separate Java/Bedrock commands |
-| `commands` | TPA command names, listened commands, accept/deny commands |
-| `update-check` | Update check toggle and interval |
+| `language` | Interface language: `zh_CN`, `zh_TW`, or `en_US`. |
+| `request-expire-seconds` | Lifetime of an incoming request. |
+| `java-request-gui` | Enable the Java incoming-request confirmation GUI. |
+| `bedrock-request` | Bedrock form reopen mode and automatic resend interval. |
+| `java-dialog-gui` | Native Dialog and player-list settings. |
+| `back-button` | Back button and separate Java/Bedrock commands. |
+| `velocity` | Cross-server synchronization settings. |
+| `commands` | TPA, listen, accept, and deny command names. |
+| `update-check` | Update checks and interval. |
 
 ## Dependencies
-- Required: Paper 1.21+ (or a fork)
-- Optional: Floodgate (Bedrock form support)
-- Optional: Velocity (cross-server player sync — the same jar works on the proxy)
+
+- Required: Paper 1.21+ or a compatible fork.
+- Optional: Floodgate for Bedrock form support.
+- Optional: Velocity for cross-server player synchronization.
 
 ## License
 

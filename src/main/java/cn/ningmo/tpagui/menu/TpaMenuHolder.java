@@ -9,6 +9,9 @@ import org.bukkit.inventory.InventoryHolder;
  */
 public class TpaMenuHolder implements InventoryHolder {
     private final int page;
+    private final java.util.Map<Integer, String> targets = new java.util.HashMap<>();
+    public void setTarget(int slot, String name) { targets.put(slot, name); }
+    public String getTarget(int slot) { return targets.get(slot); }
 
     public TpaMenuHolder(int page) {
         this.page = page;

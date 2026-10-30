@@ -36,6 +36,32 @@ public class TpaGuiCommand implements CommandExecutor {
         }
         
         Player player = (Player) sender;
+        cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest pending =
+            cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.get(player.getUniqueId());
+        if (pending != null) {
+            if (pending.isExpired()) {
+                cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.remove(player.getUniqueId(), pending);
+                player.sendMessage(TpaGui.getInstance().getMessage("request-expired"));
+            } else {
+                boolean floodgatePlayer = false;
+                if (TpaGui.getInstance().isFloodgateEnabled()) {
+                    try {
+                        FloodgateApi api = FloodgateApi.getInstance();
+                        floodgatePlayer = api != null && api.isFloodgatePlayer(player.getUniqueId());
+                    } catch (Exception ignored) {
+                        // Floodgate 状态异常时按 Java 玩家处理，避免阻塞命令。
+                    }
+                }
+                if (floodgatePlayer) {
+                    BedrockFormManager.sendTpaRequestForm(player, pending.requesterName, pending.isTpaHere);
+                    return true;
+                }
+                if (TpaGui.getInstance().getConfig().getBoolean("java-request-gui.enabled", true)) {
+                    cn.ningmo.tpagui.menu.JavaConfirmMenu.open(player, pending);
+                    return true;
+                }
+            }
+        }
         
         // 如果开启了 Velocity 模式，且需要更新玩家列表
         if (TpaGui.getInstance().getConfig().getBoolean("velocity.enabled", false)) {

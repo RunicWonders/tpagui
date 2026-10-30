@@ -18,6 +18,9 @@ public class JavaDialogManager {
     public static void dispatchTpaRequest(Player target, String requesterName, boolean isTpaHere) {
         TpaGui plugin = TpaGui.getInstance();
 
+        cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest request =
+            new cn.ningmo.tpagui.listener.TpaRequestListener.PendingRequest(requesterName, isTpaHere);
+        cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.put(target.getUniqueId(), request);
         // 检查目标玩家是否为基岩版玩家
         if (plugin.isFloodgateEnabled()) {
             try {
@@ -48,7 +51,11 @@ public class JavaDialogManager {
 
         // 如果不是基岩版玩家，尝试发送 Java 1.21.6+ 原生 Dialog
         // （版本与配置检查已收敛到 sendTpaRequestDialog 内部）
-        if (sendTpaRequestDialog(target, requesterName, isTpaHere)) {
+        if (plugin.getConfig().getBoolean("java-request-gui.enabled", true)) {
+            cn.ningmo.tpagui.menu.JavaConfirmMenu.open(target, request);
+            return;
+        }
+        if (!plugin.isFolia() && sendTpaRequestDialog(target, requesterName, isTpaHere)) {
             return;
         }
 
@@ -56,7 +63,7 @@ public class JavaDialogManager {
         String commandType = isTpaHere
             ? plugin.getConfig().getString("commands.tpa.here", "tpahere")
             : plugin.getConfig().getString("commands.tpa.to-player", "tpa");
-        target.sendMessage(plugin.getMessage("messages.tpa-request-notify",
+        target.sendMessage(plugin.getMessage(isTpaHere ? "messages.tpahere-request-notify" : "messages.tpa-request-notify",
             "{player}", requesterName,
             "{type}", commandType));
     }

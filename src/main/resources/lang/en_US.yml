@@ -46,7 +46,6 @@ log:
   gui-command-executed: "{player} executed command via GUI: {command}"
   form-closed: "{player} closed teleport request menu"
   form-response-error: "Error processing form response: {error}"
-  playerlist-parse-error: "Failed to parse PlayerList plugin message: {error}"
   floodgate-api-unavailable: "FloodgateApi unavailable"
   floodgate-player-unavailable: "Unable to get FloodgatePlayer instance for player {player}"
   floodgate-send-form-error: "Error sending form: {error}"
@@ -76,3 +75,13 @@ log:
   velocity-mode-enabled: "Velocity cross-server sync mode enabled"
   proxy-mode-local: "Currently in proxy subserver environment, but cross-server mode is disabled (velocity.enabled: false). Plugin will run in local mode."
   velocity-registering-channels: "No proxy environment detected, but velocity.enabled is true, registering message channels..."
+
+request-expired: "&cThis request has expired or been replaced."
+request-reopen-hint: "&eYou have a pending teleport request. Use &a/tpagui &eto reopen it."
+confirm:
+  title: "Confirm teleport request"
+  skull-name: "&e{player}"
+  content-to: "&7Wants to teleport to you"
+  content-here: "&7Wants you to teleport to them"
+  accept: "&aAccept"
+  deny: "&cDeny"
