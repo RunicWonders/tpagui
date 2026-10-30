@@ -50,10 +50,7 @@ public class TpaRequestListener implements Listener {
     }
 
     public static String resolveCommand(String command, String requester) {
-        String normalized = command.trim();
-        return normalized.contains("{player}")
-            ? normalized.replace("{player}", requester)
-            : normalized + " " + requester;
+        return command.replace("{player}", requester);
     }
 
     public static void executeConfiguredCommands(Player player, String path, String requester) {

@@ -76,8 +76,8 @@ commands:
   
   # 接受和拒绝命令
   accept:
-    - "tpaccept"
-#    - "tpaaccept"
+    - "tpaccept {player}"
+#    - "tpaaccept {player}"
   deny:
-    - "tpdeny"
-#    - "tpadeny"
+    - "tpdeny {player}"
+#    - "tpadeny {player}"

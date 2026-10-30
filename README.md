@@ -91,6 +91,16 @@ See `src/main/resources/config.yml` for the complete commented configuration. Ma
 | `commands` | TPA, listen, accept, and deny command names. |
 | `update-check` | Update checks and interval. |
 
+Accept and deny commands run exactly as configured; `{player}` is replaced with the requester name when present. No requester name is appended automatically, so include the placeholder where the TPA plugin expects a player argument:
+
+```yaml
+commands:
+  accept:
+    - "tpaccept {player}"
+  deny:
+    - "tpdeny {player}"
+```
+
 After changing configuration, restart the server or reload the plugin through your normal server management workflow so the new values are loaded.
 
 ## Building
