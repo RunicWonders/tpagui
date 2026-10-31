@@ -2,62 +2,107 @@ package cn.ningmo.tpagui.listener;
 
 import cn.ningmo.tpagui.TpaGui;
 import cn.ningmo.tpagui.form.JavaDialogManager;
+import cn.ningmo.tpagui.form.SchedulerUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TpaRequestListener implements Listener {
-    
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public static final Map<UUID, PendingRequest> pendingRequests = new ConcurrentHashMap<>();
+
+    public static final class PendingRequest {
+        public final String requesterName;
+        public final boolean isTpaHere;
+        private final long timestamp = System.currentTimeMillis();
+        private boolean reopenHintSent;
+        public PendingRequest(String name, boolean here) { requesterName = name; isTpaHere = here; }
+        public boolean markReopenHintSent() {
+            if (reopenHintSent) return false;
+            reopenHintSent = true;
+            return true;
+        }
+        public boolean isExpired() {
+            return System.currentTimeMillis() - timestamp >= Math.max(1,
+                TpaGui.getInstance().getConfig().getInt("request-expire-seconds", 300)) * 1000L;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCommand(PlayerCommandPreprocessEvent event) {
-        String command = event.getMessage().toLowerCase();
-        
-        // 从配置文件获取监听的命令列表
-        java.util.List<String> listenCommands = TpaGui.getInstance().getConfig().getStringList("commands.listen-commands");
-        
-        // 检查是否是配置的tpa相关命令
-        boolean isTpaCommand = false;
-        for (String cmd : listenCommands) {
-            if (command.startsWith("/" + cmd.toLowerCase() + " ")) {
-                isTpaCommand = true;
-                break;
-            }
+        observeCommand(event.getPlayer(), event.getMessage());
+    }
+
+    // performCommand bypasses PlayerCommandPreprocessEvent; emit it once for GUI commands.
+    public static void executeAsPlayer(Player player, String command) {
+        String normalized = command.trim().replaceFirst("^/", "");
+        if (normalized.isEmpty()) return;
+        PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, "/" + normalized);
+        Bukkit.getPluginManager().callEvent(event);
+        if (!event.isCancelled()) player.performCommand(event.getMessage().replaceFirst("^/", ""));
+    }
+
+    public static String resolveCommand(String command, String requester) {
+        if (command.contains("{player}")) {
+            return command.replace("{player}", requester);
         }
-        
-        if (!isTpaCommand) {
-            return;
+        if (TpaGui.getInstance().getConfig().getBoolean("commands.append-player-if-missing", true)) {
+            return command + " " + requester;
         }
-        
-        String[] args = event.getMessage().split(" ");
-        if (args.length < 2) return;
-        
-        // 获取目标玩家
-        String targetName = args[1];
-        Player target = event.getPlayer().getServer().getPlayer(targetName);
+        return command;
+    }
+
+    public static void executeConfiguredCommands(Player player, String path, String requester) {
+        for (String command : TpaGui.getInstance().getConfig().getStringList(path)) {
+            executeAsPlayer(player, resolveCommand(command, requester));
+        }
+    }
+
+    private static String label(String command) {
+        return command.trim().replaceFirst("^/", "").split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+    }
+
+    private static void observeCommand(Player sender, String command) {
         TpaGui plugin = TpaGui.getInstance();
-        String tpaHereCommand = plugin.getConfig().getString("commands.tpa.here", "tpahere");
-        boolean isTpaHere = command.startsWith("/" + tpaHereCommand.toLowerCase() + " ");
-
-        if (target == null) {
-            // 如果本地找不到，检查是否为跨服玩家
-            if (plugin.getConfig().getBoolean("velocity.enabled", false)) {
-                cn.ningmo.tpagui.data.GlobalPlayer gp = cn.ningmo.tpagui.data.PlayerManager.getGlobalPlayer(targetName);
-                if (gp != null) {
-                    // 发送跨服请求通知给 Velocity
-                    com.google.common.io.ByteArrayDataOutput out = com.google.common.io.ByteStreams.newDataOutput();
-                    out.writeUTF("ShowRequest");
-                    out.writeUTF(targetName);
-                    out.writeUTF(event.getPlayer().getName());
-                    out.writeBoolean(isTpaHere);
-                    event.getPlayer().sendPluginMessage(plugin, "tpagui:main", out.toByteArray());
-                }
-            }
+        String[] args = command.trim().replaceFirst("^/", "").split("\\s+");
+        String cmd = label(command);
+        boolean response = java.util.stream.Stream.concat(
+            plugin.getConfig().getStringList("commands.accept").stream(),
+            plugin.getConfig().getStringList("commands.deny").stream()).anyMatch(c -> label(c).equals(cmd));
+        if (response) {
+            PendingRequest pending = pendingRequests.get(sender.getUniqueId());
+            if (pending != null && (args.length == 1 || pending.requesterName.equalsIgnoreCase(args[1])))
+                pendingRequests.remove(sender.getUniqueId(), pending);
             return;
         }
+        if (args.length != 2 || plugin.getConfig().getStringList("commands.listen-commands").stream()
+                .noneMatch(c -> label(c).equals(cmd))) return;
+        boolean here = cmd.equals(label(plugin.getConfig().getString("commands.tpa.here", "tpahere")));
+        String requester = sender.getName();
+        Player target = Bukkit.getPlayerExact(args[1]);
+        if (target != null && !target.getUniqueId().equals(sender.getUniqueId())) {
+            SchedulerUtil.runTask(target, () -> JavaDialogManager.dispatchTpaRequest(target, requester, here));
+        } else if (target == null && plugin.getConfig().getBoolean("velocity.enabled", false)
+                && cn.ningmo.tpagui.data.PlayerManager.getGlobalPlayer(args[1]) != null) {
+            com.google.common.io.ByteArrayDataOutput out = com.google.common.io.ByteStreams.newDataOutput();
+            out.writeUTF("ShowRequest");
+            out.writeUTF(args[1]);
+            out.writeUTF(requester);
+            out.writeBoolean(here);
+            sender.sendPluginMessage(plugin, "tpagui:main", out.toByteArray());
+        }
+    }
 
-        // 分发传送请求：基岩版表单 -> Java Dialog -> 聊天消息兜底
-        JavaDialogManager.dispatchTpaRequest(target, event.getPlayer().getName(), isTpaHere);
+    @EventHandler public void onQuit(PlayerQuitEvent event) {
+        String name = event.getPlayer().getName();
+        pendingRequests.remove(event.getPlayer().getUniqueId());
+        pendingRequests.entrySet().removeIf(e -> e.getValue().requesterName.equalsIgnoreCase(name));
     }
 }

@@ -24,8 +24,6 @@ public class GuiManager {
         int playersPerPage = Math.max(1, Math.min(45,
             plugin.getConfig().getInt("java-dialog-gui.players-per-page", 45))); // 钳制在 1~45，最多 5 行
 
-        Inventory inv = Bukkit.createInventory(new TpaMenuHolder(page), ROWS * 9, 
-            plugin.getMessage("gui.title", "{page}", String.valueOf(page + 1)));
         
         List<Object> availablePlayers = new ArrayList<>();
         
@@ -53,6 +51,9 @@ public class GuiManager {
         
         // 计算总页数
         int totalPlayers = availablePlayers.size();
+        TpaMenuHolder holder = new TpaMenuHolder(page);
+        Inventory inv = Bukkit.createInventory(holder, ROWS * 9,
+            plugin.getMessage("gui.title", "{page}", String.valueOf(page + 1)));
         int totalPages = totalPlayers > 0 ? ((totalPlayers - 1) / playersPerPage + 1) : 1;
         
         // 添加玩家头颅
@@ -69,6 +70,7 @@ public class GuiManager {
             
             if (skull != null && skull.getItemMeta() != null) {
                 inv.setItem(slotIndex, skull);
+                holder.setTarget(slotIndex, target instanceof Player p ? p.getName() : ((GlobalPlayer) target).getName());
             }
             // 无论头颅创建成功与否都占用一个 slot，保证分页索引不错位
             slotIndex++;

@@ -76,3 +76,13 @@ log:
   velocity-mode-enabled: "已啟用 Velocity 跨服同步模式"
   proxy-mode-local: "當前處於代理子服環境，但未開啟跨服模式 (velocity.enabled: false)。插件將以本地模式運行。"
   velocity-registering-channels: "未偵測到代理環境，但 velocity.enabled 為 true，正在註冊訊息通道..."
+
+request-expired: "&c傳送請求已過期或已被替換。"
+request-reopen-hint: "&e你有待處理的傳送請求，輸入 &a/tpagui &e重新開啟。"
+confirm:
+  title: "傳送請求確認"
+  skull-name: "&e{player}"
+  content-to: "&7想要傳送到你的位置"
+  content-here: "&7想要你傳送到他的位置"
+  accept: "&a接受"
+  deny: "&c拒絕"

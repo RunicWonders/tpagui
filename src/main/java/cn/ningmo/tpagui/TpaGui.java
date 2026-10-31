@@ -132,6 +132,7 @@ public class TpaGui extends JavaPlugin {
     
     @Override
     public void onDisable() {
+        cn.ningmo.tpagui.listener.TpaRequestListener.pendingRequests.clear();
         // 注销插件消息通道
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         getServer().getMessenger().unregisterIncomingPluginChannel(this);
@@ -145,7 +146,7 @@ public class TpaGui extends JavaPlugin {
     private boolean isVersionAtLeast(String bukkitVersion, int reqMajor, int reqMinor, int reqPatch) {
         try {
             String[] parts = bukkitVersion.split("-")[0].split("\\.");
-            // 各段只取前导数字，兼容快照格式（如 26w14a 取 26）
+            // Read leading digits in each segment to handle snapshot versions such as 26w14a.
             int major = parts.length > 0 ? Integer.parseInt(parts[0].replaceAll("\\D.*$", "")) : 0;
             int minor = parts.length > 1 ? Integer.parseInt(parts[1].replaceAll("\\D.*$", "")) : 0;
             int patch = parts.length > 2 ? Integer.parseInt(parts[2].replaceAll("\\D.*$", "")) : 0;
@@ -198,9 +199,11 @@ public class TpaGui extends JavaPlugin {
             "{latest}", updateChecker.getLatestVersion(),
             "{url}", updateChecker.getDownloadUrl());
         
-        getServer().getOnlinePlayers().stream()
-            .filter(player -> player.hasPermission("tpagui.admin"))
-            .forEach(player -> player.sendMessage(playerMessage));
+        for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
+            cn.ningmo.tpagui.form.SchedulerUtil.runTask(player, () -> {
+                if (player.hasPermission("tpagui.admin")) player.sendMessage(playerMessage);
+            });
+        }
     }
     
     /**
