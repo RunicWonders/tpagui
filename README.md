@@ -91,7 +91,7 @@ See `src/main/resources/config.yml` for the complete commented configuration. Ma
 | `commands` | TPA, listen, accept, and deny command names. |
 | `update-check` | Update checks and interval. |
 
-Accept and deny commands run exactly as configured; `{player}` is replaced with the requester name when present. No requester name is appended automatically, so include the placeholder where the TPA plugin expects a player argument:
+Accept and deny commands run exactly as configured; `{player}` is replaced with the requester name when present. If the placeholder is missing and `commands.append-player-if-missing` is `true` (the default, kept for backward compatibility), the requester name is appended to the end of the command. Set it to `false` to execute commands exactly as written:
 
 ```yaml
 commands:

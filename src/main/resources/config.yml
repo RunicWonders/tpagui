@@ -74,6 +74,10 @@ commands:
     - "tpa"
     - "tpahere"
   
+  # 兼容旧配置：当 accept/deny 命令中没有 {player} 时，是否自动在末尾追加请求者名称
+  # 显式包含 {player} 时始终以占位符为准；设为 false 则完全按配置原样执行
+  append-player-if-missing: true
+
   # 接受和拒绝命令
   accept:
     - "tpaccept {player}"

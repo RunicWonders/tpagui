@@ -50,7 +50,13 @@ public class TpaRequestListener implements Listener {
     }
 
     public static String resolveCommand(String command, String requester) {
-        return command.replace("{player}", requester);
+        if (command.contains("{player}")) {
+            return command.replace("{player}", requester);
+        }
+        if (TpaGui.getInstance().getConfig().getBoolean("commands.append-player-if-missing", true)) {
+            return command + " " + requester;
+        }
+        return command;
     }
 
     public static void executeConfiguredCommands(Player player, String path, String requester) {
