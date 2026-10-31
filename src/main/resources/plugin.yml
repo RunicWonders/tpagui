@@ -1,9 +1,9 @@
 name: TpaGui
-version: 1.2.0
+version: 1.3.0
 folia-supported: true
 author: lemwood
 main: cn.ningmo.tpagui.TpaGui
-api-version: '1.21'
+api-version: '1.20'
 softdepend: [floodgate]
 
 commands:

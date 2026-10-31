@@ -30,15 +30,9 @@ public class TpaGui extends JavaPlugin {
         languageManager = new LanguageManager(this);
         
         // 3. 检查是否在代理环境下（BungeeCord/Velocity 子服）
-        boolean isProxy = false;
-        try {
-            // 检查 Spigot 的 BungeeCord 设置
-            isProxy = getServer().spigot().getConfig().getBoolean("settings.bungeecord", false);
-        } catch (Throwable ignored) {
-            // 非 Spigot 环境，尝试通过消息通道判断
-            isProxy = getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
-                      getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
-        }
+        // Paper 26.3 起 Server#spigot() 已标记移除，改用插件消息通道判断。
+        boolean isProxy = getServer().getMessenger().getIncomingChannels().contains("velocity:main")
+            || getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
         
         // 插件消息处理器只实例化一次，两个分支共用
         cn.ningmo.tpagui.messaging.PluginMessageHandler messageHandler = new cn.ningmo.tpagui.messaging.PluginMessageHandler();
@@ -140,16 +134,27 @@ public class TpaGui extends JavaPlugin {
     }
     
     /**
-     * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT"）
+     * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT" 或 "26.3.build.235-stable"）
      * @return 是否不低于 reqMajor.reqMinor.reqPatch
      */
     private boolean isVersionAtLeast(String bukkitVersion, int reqMajor, int reqMinor, int reqPatch) {
         try {
-            String[] parts = bukkitVersion.split("-")[0].split("\\.");
-            // Read leading digits in each segment to handle snapshot versions such as 26w14a.
-            int major = parts.length > 0 ? Integer.parseInt(parts[0].replaceAll("\\D.*$", "")) : 0;
-            int minor = parts.length > 1 ? Integer.parseInt(parts[1].replaceAll("\\D.*$", "")) : 0;
-            int patch = parts.length > 2 ? Integer.parseInt(parts[2].replaceAll("\\D.*$", "")) : 0;
+            // Paper 26.x 的 getBukkitVersion() 形如 26.3.build.235-stable，
+            // 不能简单按 "." 取第三段，需跳过 build/pre 等非数字段。
+            String[] parts = bukkitVersion.split("[-.]");
+            int[] numbers = new int[3];
+            int found = 0;
+            for (String part : parts) {
+                int end = 0;
+                while (end < part.length() && Character.isDigit(part.charAt(end))) end++;
+                if (end == 0) continue;
+                numbers[found++] = Integer.parseInt(part.substring(0, end));
+                if (found == 3) break;
+            }
+            if (found == 0) return false;
+            int major = numbers[0];
+            int minor = found > 1 ? numbers[1] : 0;
+            int patch = found > 2 ? numbers[2] : 0;
             return major > reqMajor
                 || (major == reqMajor && minor > reqMinor)
                 || (major == reqMajor && minor == reqMinor && patch >= reqPatch);
