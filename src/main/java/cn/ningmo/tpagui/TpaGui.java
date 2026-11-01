@@ -5,7 +5,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class TpaGui extends JavaPlugin {
+    private static final Pattern SNAPSHOT_VERSION = Pattern.compile(
+        "^(\\d{2})w\\d{2}[a-z](?:[-.].*)?$", Pattern.CASE_INSENSITIVE);
+    private static final int FIRST_DIALOG_SNAPSHOT_YEAR = 26;
+    private static final String[] CONTRIBUTORS_BY_COMMIT_COUNT = {
+        "leemwood",
+        "xiaobingkuai123 (PR #13)"
+    };
+
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
     private boolean isFolia = false;
@@ -28,17 +39,12 @@ public class TpaGui extends JavaPlugin {
         
         // 2. 初始化语言管理器
         languageManager = new LanguageManager(this);
+        logContributors();
         
         // 3. 检查是否在代理环境下（BungeeCord/Velocity 子服）
-        boolean isProxy = false;
-        try {
-            // 检查 Spigot 的 BungeeCord 设置
-            isProxy = getServer().spigot().getConfig().getBoolean("settings.bungeecord", false);
-        } catch (Throwable ignored) {
-            // 非 Spigot 环境，尝试通过消息通道判断
-            isProxy = getServer().getMessenger().getIncomingChannels().contains("velocity:main") || 
-                      getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
-        }
+        // Paper 26.3 起 Server#spigot() 已标记移除，改用插件消息通道判断。
+        boolean isProxy = getServer().getMessenger().getIncomingChannels().contains("velocity:main")
+            || getServer().getMessenger().getIncomingChannels().contains("bungeecord:main");
         
         // 插件消息处理器只实例化一次，两个分支共用
         cn.ningmo.tpagui.messaging.PluginMessageHandler messageHandler = new cn.ningmo.tpagui.messaging.PluginMessageHandler();
@@ -78,9 +84,8 @@ public class TpaGui extends JavaPlugin {
         }
 
         // 检查 1.21.6+ /dialog 支持
-        // 25w02a 对应的版本是 1.21.6，数值比较以覆盖 1.21.8+ 及更高版本
         String version = getServer().getBukkitVersion();
-        if (isVersionAtLeast(version, 1, 21, 6)) {
+        if (isDialogVersionSupported(version)) {
             isDialogSupported = true;
             getLogger().info(getLogMessage("dialog-supported"));
         }
@@ -140,16 +145,37 @@ public class TpaGui extends JavaPlugin {
     }
     
     /**
-     * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT"）
+     * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT" 或 "26.3.build.235-stable"）
      * @return 是否不低于 reqMajor.reqMinor.reqPatch
      */
+    private boolean isDialogVersionSupported(String bukkitVersion) {
+        Matcher snapshot = SNAPSHOT_VERSION.matcher(bukkitVersion);
+        if (snapshot.matches()) {
+            int year = Integer.parseInt(snapshot.group(1));
+            // 25w snapshots span pre- and post-1.21.6 development; only newer years are unambiguous.
+            return year >= FIRST_DIALOG_SNAPSHOT_YEAR;
+        }
+        return isVersionAtLeast(bukkitVersion, 1, 21, 6);
+    }
+
     private boolean isVersionAtLeast(String bukkitVersion, int reqMajor, int reqMinor, int reqPatch) {
         try {
-            String[] parts = bukkitVersion.split("-")[0].split("\\.");
-            // Read leading digits in each segment to handle snapshot versions such as 26w14a.
-            int major = parts.length > 0 ? Integer.parseInt(parts[0].replaceAll("\\D.*$", "")) : 0;
-            int minor = parts.length > 1 ? Integer.parseInt(parts[1].replaceAll("\\D.*$", "")) : 0;
-            int patch = parts.length > 2 ? Integer.parseInt(parts[2].replaceAll("\\D.*$", "")) : 0;
+            // Paper 26.x 的 getBukkitVersion() 形如 26.3.build.235-stable，
+            // 不能简单按 "." 取第三段，需跳过 build/pre 等非数字段。
+            String[] parts = bukkitVersion.split("[-.]");
+            int[] numbers = new int[3];
+            int found = 0;
+            for (String part : parts) {
+                int end = 0;
+                while (end < part.length() && Character.isDigit(part.charAt(end))) end++;
+                if (end == 0) continue;
+                numbers[found++] = Integer.parseInt(part.substring(0, end));
+                if (found == 3) break;
+            }
+            if (found == 0) return false;
+            int major = numbers[0];
+            int minor = found > 1 ? numbers[1] : 0;
+            int patch = found > 2 ? numbers[2] : 0;
             return major > reqMajor
                 || (major == reqMajor && minor > reqMinor)
                 || (major == reqMajor && minor == reqMinor && patch >= reqPatch);
@@ -243,4 +269,14 @@ public class TpaGui extends JavaPlugin {
     public String getLogMessage(String path, String... placeholders) {
         return languageManager.getLogMessage(path, placeholders);
     }
-} 
+
+    private void logContributors() {
+        getLogger().info(getLogMessage("contributors-header"));
+        for (int i = 0; i < CONTRIBUTORS_BY_COMMIT_COUNT.length; i++) {
+            getLogger().info(getLogMessage("contributor-rank",
+                "{rank}", String.valueOf(i + 1),
+                "{name}", CONTRIBUTORS_BY_COMMIT_COUNT[i]));
+        }
+        getLogger().info(getLogMessage("contributors-thanks"));
+    }
+}

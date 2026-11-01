@@ -76,6 +76,9 @@ log:
   velocity-mode-enabled: "Velocity cross-server sync mode enabled"
   proxy-mode-local: "Currently in proxy subserver environment, but cross-server mode is disabled (velocity.enabled: false). Plugin will run in local mode."
   velocity-registering-channels: "No proxy environment detected, but velocity.enabled is true, registering message channels..."
+  contributors-header: "Contributors (ranked by Git commit count):"
+  contributor-rank: "  #{rank}: {name}"
+  contributors-thanks: "Thanks to xiaobingkuai123 for PR #13."
 
 request-expired: "&cThis request has expired or been replaced."
 request-reopen-hint: "&eYou have a pending teleport request. Use &a/tpagui &eto reopen it."

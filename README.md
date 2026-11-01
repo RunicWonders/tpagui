@@ -11,10 +11,12 @@ TpaGui does not implement teleportation itself. It detects and executes the comm
 
 ## Requirements
 
-- Paper 1.21+ or a compatible fork.
-- Java 21 or newer to build the project.
+- Paper 1.20.1+ or a compatible fork (including Folia 1.20.1+).
+- Java 17 or newer.
 - Floodgate is optional and required for Bedrock forms.
 - Velocity is optional and required only for cross-server synchronization.
+
+The same jar supports Paper 1.20.1 through 26.3. Native `/dialog` request prompts are enabled on 1.21.6+ servers, including 26.x.
 
 ## Installation
 
@@ -104,6 +106,8 @@ commands:
 After changing configuration, restart the server or reload the plugin through your normal server management workflow so the new values are loaded.
 
 ## Building
+
+JDK 17 or newer is required. The build targets Java 17 bytecode so the same jar can run on Paper 1.20.1+ through 26.3.
 
 ```text
 mvn -B -ntp clean verify

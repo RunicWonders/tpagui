@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
     id = "tpagui",
     name = "TpaGui",
-    version = "1.2.0-beta.6",
+    version = "1.3.0",
     description = "A simple TPA GUI plugin for Velocity",
     authors = {"lemwood"}
 )
