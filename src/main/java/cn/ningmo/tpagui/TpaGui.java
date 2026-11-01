@@ -12,6 +12,10 @@ public class TpaGui extends JavaPlugin {
     private static final Pattern SNAPSHOT_VERSION = Pattern.compile(
         "^(\\d{2})w\\d{2}[a-z](?:[-.].*)?$", Pattern.CASE_INSENSITIVE);
     private static final int FIRST_DIALOG_SNAPSHOT_YEAR = 26;
+    private static final String[] CONTRIBUTORS_BY_COMMIT_COUNT = {
+        "leemwood",
+        "xiaobingkuai123 (PR #13)"
+    };
 
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
@@ -35,6 +39,7 @@ public class TpaGui extends JavaPlugin {
         
         // 2. 初始化语言管理器
         languageManager = new LanguageManager(this);
+        logContributors();
         
         // 3. 检查是否在代理环境下（BungeeCord/Velocity 子服）
         // Paper 26.3 起 Server#spigot() 已标记移除，改用插件消息通道判断。
@@ -263,5 +268,15 @@ public class TpaGui extends JavaPlugin {
      */
     public String getLogMessage(String path, String... placeholders) {
         return languageManager.getLogMessage(path, placeholders);
+    }
+
+    private void logContributors() {
+        getLogger().info(getLogMessage("contributors-header"));
+        for (int i = 0; i < CONTRIBUTORS_BY_COMMIT_COUNT.length; i++) {
+            getLogger().info(getLogMessage("contributor-rank",
+                "{rank}", String.valueOf(i + 1),
+                "{name}", CONTRIBUTORS_BY_COMMIT_COUNT[i]));
+        }
+        getLogger().info(getLogMessage("contributors-thanks"));
     }
 }

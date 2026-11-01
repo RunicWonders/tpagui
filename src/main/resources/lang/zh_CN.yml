@@ -76,6 +76,9 @@ log:
   velocity-mode-enabled: "已启用 Velocity 跨服同步模式"
   proxy-mode-local: "当前处于代理子服环境，但未开启跨服模式 (velocity.enabled: false)。插件将以本地模式运行。"
   velocity-registering-channels: "未检测到代理环境，但 velocity.enabled 为 true，正在注册消息通道..."
+  contributors-header: "贡献者（按 Git 提交数排名）："
+  contributor-rank: "  第 {rank} 位：{name}"
+  contributors-thanks: "感谢 xiaobingkuai123 对 PR #13 的贡献。"
 
 request-expired: "&c传送请求已过期或已被替换。"
 request-reopen-hint: "&e你有待处理的传送请求，输入 &a/tpagui &e重新打开。"
