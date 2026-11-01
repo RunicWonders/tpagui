@@ -43,3 +43,44 @@ jobs:
         generate_release_notes: true
         draft: false
         prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+
+    - name: Publish to Modrinth
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        TAG_NAME: ${{ github.ref_name }}
+      run: |
+        set -euo pipefail
+
+        if [ -z "$MODRINTH_TOKEN" ]; then
+          echo "::error::Set the MODRINTH_TOKEN repository secret to publish tagged releases to Modrinth."
+          exit 1
+        fi
+
+        version="${TAG_NAME#v}"
+        jar="target/tpagui-${version}.jar"
+        test -f "$jar"
+
+        case "$TAG_NAME" in
+          *alpha*) version_type=alpha ;;
+          *beta*) version_type=beta ;;
+          *) version_type=release ;;
+        esac
+
+        game_versions='["1.20.1","1.20.2","1.20.3","1.20.4","1.20.5","1.20.6","1.21","1.21.1","1.21.2","1.21.3","1.21.4","1.21.5","1.21.6","1.21.7","1.21.8","1.21.9","1.21.10","1.21.11","26.1","26.2","26.3"]'
+        loaders='["paper","folia","velocity"]'
+        data=$(jq -n \
+          --arg project_id "JhpSZtr7" \
+          --arg name "TpaGui ${version}" \
+          --arg version_number "$version" \
+          --arg changelog "GitHub release: https://github.com/RunicWonders/tpagui/releases/tag/${TAG_NAME}" \
+          --arg version_type "$version_type" \
+          --argjson game_versions "$game_versions" \
+          --argjson loaders "$loaders" \
+          '{project_id:$project_id,name:$name,version_number:$version_number,changelog:$changelog,dependencies:[],game_versions:$game_versions,version_type:$version_type,loaders:$loaders,featured:false,file_parts:["file"],primary_file:"file"}')
+
+        curl --fail-with-body --silent --show-error \
+          -H "Authorization: ${MODRINTH_TOKEN}" \
+          -F "data=${data}" \
+          -F "file=@${jar};type=application/java-archive" \
+          https://api.modrinth.com/v2/version
