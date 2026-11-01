@@ -5,7 +5,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class TpaGui extends JavaPlugin {
+    private static final Pattern SNAPSHOT_VERSION = Pattern.compile(
+        "^(\\d{2})w\\d{2}[a-z](?:[-.].*)?$", Pattern.CASE_INSENSITIVE);
+    private static final int FIRST_DIALOG_SNAPSHOT_YEAR = 26;
+
     private static TpaGui instance;
     private boolean floodgateEnabled = false;
     private boolean isFolia = false;
@@ -72,9 +79,8 @@ public class TpaGui extends JavaPlugin {
         }
 
         // 检查 1.21.6+ /dialog 支持
-        // 25w02a 对应的版本是 1.21.6，数值比较以覆盖 1.21.8+ 及更高版本
         String version = getServer().getBukkitVersion();
-        if (isVersionAtLeast(version, 1, 21, 6)) {
+        if (isDialogVersionSupported(version)) {
             isDialogSupported = true;
             getLogger().info(getLogMessage("dialog-supported"));
         }
@@ -137,6 +143,16 @@ public class TpaGui extends JavaPlugin {
      * 数值比较 Bukkit 版本号（如 "1.21.6-R0.1-SNAPSHOT" 或 "26.3.build.235-stable"）
      * @return 是否不低于 reqMajor.reqMinor.reqPatch
      */
+    private boolean isDialogVersionSupported(String bukkitVersion) {
+        Matcher snapshot = SNAPSHOT_VERSION.matcher(bukkitVersion);
+        if (snapshot.matches()) {
+            int year = Integer.parseInt(snapshot.group(1));
+            // 25w snapshots span pre- and post-1.21.6 development; only newer years are unambiguous.
+            return year >= FIRST_DIALOG_SNAPSHOT_YEAR;
+        }
+        return isVersionAtLeast(bukkitVersion, 1, 21, 6);
+    }
+
     private boolean isVersionAtLeast(String bukkitVersion, int reqMajor, int reqMinor, int reqPatch) {
         try {
             // Paper 26.x 的 getBukkitVersion() 形如 26.3.build.235-stable，
@@ -248,4 +264,4 @@ public class TpaGui extends JavaPlugin {
     public String getLogMessage(String path, String... placeholders) {
         return languageManager.getLogMessage(path, placeholders);
     }
-} 
+}
